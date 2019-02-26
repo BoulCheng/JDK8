@@ -229,6 +229,50 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * The concurrent-programming-like SSA-based coding style helps
      * avoid aliasing errors amid all of the twisty pointer operations.
      */
+    /**
+     * If the initial capacity is greater than the maximum number of entries divided by the load factor, no rehash operations will ever occur.
+     * 当 initial capacity >= entries/load factor  时，HashMap不会执行rehash即{@link #resize()} 如new HashMap(4), 则当实际entries <= 4 * load factor 时不会执行rehash
+     *
+     * However, since the vast majority of bins in normal use are not overpopulated, checking for existence of tree bins may be delayed in the course of table methods.
+     * We conservatively check generic types via reflection to validate this -- see method comparableClassFor
+     * The added complexity of tree bins is worthwhile in providing worst-case O(log n) operations when keys either have distinct hashes or are orderable
+     * performance degrades gracefully under accidental or malicious usages in which hashCode() methods return values that are poorly distributed
+     * 当hashCode()方法返回分布不佳的值时，在意外或恶意使用时，性能会优雅地下降
+     *
+     * If neither of these apply, we may waste about a  factor of two in time and space compared to taking no precautions
+     * 如果这两种方法都不适用，与不采取预防措施相比，我们可能会在时间和空间上浪费大约两倍的时间
+     *
+     * But the only known cases stem from poor user programming practices that are already so slow that this makes little difference
+     * 但是唯一已知的案例源于糟糕的用户编程实践，这些实践已经太慢了，这没有什么区别
+     *
+     * In usages with well-distributed user hashCodes, tree bins are rarely used
+     * 在使用分布良好的用户哈希码时，很少使用树箱
+     *
+     * Ideally, under random hashCodes, the frequency of nodes in bins follows a Poisson distribution with a parameter of about 0.5 on average for the default resizing threshold of 0.75
+     * 理想情况下，在随机哈希码下，垃圾箱中节点的频率遵循泊松分布，其参数平均约为0.5，默认调整大小阈值为0.75
+     *
+     * although with a large variance because of resizing granularity
+     * 尽管由于粒度的调整而有很大的差异
+     *
+     * to slightly simplify handling of splits and traversals that invoke iterator.remove
+     * 略微简化调用iterator.remove的拆分和遍历的处理
+     *
+     * When using comparators on insertion, to keep a total ordering (or as close as is required here) across rebalancings, we compare classes and identityHashCodes as tie-breakers.
+     * 当在插入上使用比较器时，为了保持整个重平衡的顺序(或者尽可能接近这里的要求)，我们将类和identityhashcode作为关键字进行比较。
+     *
+     * The use and transitions among plain vs tree modes is complicated by the existence of subclass LinkedHashMap
+     * 普通vs树模式之间的使用和转换由于LinkedHashMap子类的存在而变得复杂
+     *
+     * See below for hook methods defined to be invoked upon insertion, removal and access that allow LinkedHashMap internals to otherwise remain independent of these mechanics
+     * 有关在插入、删除和访问时定义的钩子方法，请参见下面的内容，这些方法使得LinkedHashMap的内部结构在其他方面保持独立于这些机制
+     *
+     * This also requires that a map instance be passed to some utility methods that may create new nodes.
+     * 这还需要将映射实例传递给一些可能创建新节点的实用通用的程序方法。
+     *
+     * The concurrent-programming-like SSA-based coding style helps avoid aliasing errors amid all of the twisty pointer operations.
+     * 类似于并发编程的基于ssa的编码风格有助于避免在所有扭转指针操作中出现混叠错误。
+     *
+     */
 
     /**
      * The default initial capacity - MUST be a power of two.
@@ -255,6 +299,11 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * tree removal about conversion back to plain bins upon
      * shrinkage.
      */
+    /**
+     * the value must be greater than 2 and should be at least 8 to mesh with assumptions in tree removal about conversion back to plain bins upon shrinkage.
+     * 该值必须大于2，并且至少应该是8，以符合树木移除中关于收缩后转换回普通垃圾箱的假设。
+     */
+
     static final int TREEIFY_THRESHOLD = 8;
 
     /**
@@ -269,6 +318,10 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * (Otherwise the table is resized if too many nodes in a bin.)
      * Should be at least 4 * TREEIFY_THRESHOLD to avoid conflicts
      * between resizing and treeification thresholds.
+     */
+    /**
+     *  Should be at least 4 * TREEIFY_THRESHOLD to avoid conflicts between resizing and treeification thresholds.
+     *  应该至少为4 * TREEIFY_THRESHOLD，以避免调整大小和树化阈值之间的冲突。
      */
     static final int MIN_TREEIFY_CAPACITY = 64;
 
@@ -375,6 +428,11 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Returns a power of two size for the given target capacity.
      */
+    /**
+     * 找到大于等于cap的最小的2的幂
+     * @param cap
+     * @return
+     */
     static final int tableSizeFor(int cap) {
         int n = cap - 1;
         n |= n >>> 1;
@@ -419,6 +477,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * The next size value at which to resize (capacity * load factor).
      *
      * @serial
+     */
+    /**
+     * 当HashMap的key-value对即size大于threshold时调用{@link #resize()}, threshold = cap * load factor
+     * 如new HashMap(4), 则当实际entries <= 4 * load factor 时不会执行rehash
+     */
+    /**
+     * Additionally, if the table array has not been allocated , this field holds the initial array capacity, or zero signifying DEFAULT_INITIAL_CAPACITY
+     * 此外，如果表数组没有被分配，这个字段将保存初始数组容量，或者0表示DEFAULT_INITIAL_CAPACITY
      */
     // (The javadoc description is true upon serialization.
     // Additionally, if the table array has not been allocated, this
@@ -684,6 +750,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                 threshold = Integer.MAX_VALUE;
                 return oldTab;
             }
+            // double oldCap
             else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
                      oldCap >= DEFAULT_INITIAL_CAPACITY)
                 newThr = oldThr << 1; // double threshold
