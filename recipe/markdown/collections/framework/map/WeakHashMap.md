@@ -1,3 +1,5 @@
+# WeakHashMap
+
 - An entry in a WeakHashMap will automatically be removed when its key is no longer in ordinary use. More precisely, the presence of a mapping for a given key will not prevent the key from being discarded by the garbage collector
 
 - When a key has been discarded its entry is effectively removed from the map, so this class behaves somewhat differently from other Map implementations
