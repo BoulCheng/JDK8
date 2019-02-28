@@ -508,6 +508,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * because the top two bits of 32bit hash fields are used for
      * control purposes.
      */
+    /**
+     * This value must be exactly 1<<30 to stay within Java array allocation and indexing bounds for power of two table sizes, and is further required because the top two bits of 32bit hash fields are used for control purposes.
+     */
     private static final int MAXIMUM_CAPACITY = 1 << 30;
 
     /**
@@ -534,6 +537,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * actual floating point value isn't normally used -- it is
      * simpler to use expressions such as {@code n - (n >>> 2)} for
      * the associated resizing threshold.
+     */
+    /**
+     * The load factor for this table. Overrides of this value in constructors affect only the initial table capacity.  The actual floating point value isn't normally used -- it is simpler to use expressions such as {@code n - (n >>> 2)} for the associated resizing threshold.
      */
     private static final float LOAD_FACTOR = 0.75f;
 
@@ -568,6 +574,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * serves as a lower bound to avoid resizers encountering
      * excessive memory contention.  The value should be at least
      * DEFAULT_CAPACITY.
+     */
+    /**
+     * Minimum number of rebinnings per transfer step. Ranges are subdivided to allow multiple resizer threads.  This value serves as a lower bound to avoid resizers encountering excessive memory contention.  The value should be at least DEFAULT_CAPACITY.
      */
     private static final int MIN_TRANSFER_STRIDE = 16;
 
@@ -615,6 +624,11 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * in bulk tasks.  Subclasses of Node with a negative hash field
      * are special, and contain null keys and values (but are never
      * exported).  Otherwise, keys and vals are never null.
+     */
+    /**
+     *  Subclasses of Node with a negative hash field are special, and contain null keys and values (but are never exported).  Otherwise, keys and vals are never null.
+     * @param <K>
+     * @param <V>
      */
     static class Node<K,V> implements Map.Entry<K,V> {
         final int hash;
@@ -775,6 +789,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /**
      * The next table to use; non-null only while resizing.
      */
+    /**
+     * 扩容后的新表{@link #transfer(Node[], Node[])}
+     */
     private transient volatile Node<K,V>[] nextTable;
 
     /**
@@ -792,10 +809,17 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * creation, or 0 for default. After initialization, holds the
      * next element count value upon which to resize the table.
      */
+    /**
+     * Table initialization and resizing control.  When negative, the table is being initialized or resized: -1 for initialization, else -(1 + the number of active resizing threads).
+     * Otherwise, when table is null, holds the initial table size to use upon creation, or 0 for default. After initialization, holds the next element count value upon which to resize the table.
+     */
     private transient volatile int sizeCtl;
 
     /**
      * The next table index (plus one) to split while resizing.
+     */
+    /**
+     * 即原table的大小 {@link #transfer(Node[], Node[])}
      */
     private transient volatile int transferIndex;
 
@@ -1025,7 +1049,13 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             else {
                 V oldVal = null;
                 synchronized (f) {
+                    //进入synchronized后再检查一遍f
                     if (tabAt(tab, i) == f) {
+                        /**
+                         * 链表
+                         * Subclasses of Node with a negative hash field are special, and contain null keys and values (but are never exported)
+                         * @see Node
+                         */
                         if (fh >= 0) {
                             binCount = 1;
                             for (Node<K,V> e = f;; ++binCount) {
@@ -1046,6 +1076,11 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                                 }
                             }
                         }
+                        /**
+                         * 红黑树
+                         * @see TREEBIN hash = -2; // hash for roots of trees
+                         * 转化为红黑树时{@link TreeBin#TreeBin(TreeNode) 构造函数内部设置hash}
+                         */
                         else if (f instanceof TreeBin) {
                             Node<K,V> p;
                             binCount = 2;
@@ -1060,6 +1095,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 }
                 if (binCount != 0) {
                     if (binCount >= TREEIFY_THRESHOLD)
+                        //扩容或链表转化为红黑树
                         treeifyBin(tab, i);
                     if (oldVal != null)
                         return oldVal;
@@ -2160,6 +2196,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /**
      * A node inserted at head of bins during transfer operations.
      */
+    /**
+     * @see #transfer(Node[], Node[])
+     */
     static final class ForwardingNode<K,V> extends Node<K,V> {
         final Node<K,V>[] nextTable;
         ForwardingNode(Node<K,V>[] tab) {
@@ -2232,6 +2271,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                         @SuppressWarnings("unchecked")
                         Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n];
                         table = tab = nt;
+                        //n-1/4*n equal n*3/4 equal n*0.75(load factor)
                         sc = n - (n >>> 2);
                     }
                 } finally {
@@ -2252,6 +2292,12 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      *
      * @param x the count to add
      * @param check if <0, don't check resize, if <= 1 only check if uncontended
+     */
+    /**
+     *  Adds to count, and if table is too small and not already resizing, initiates transfer. If already resizing, helps perform transfer if work is available.
+     *  Rechecks occupancy after a transfer to see if another resize is already needed because resizings are lagging additions.
+     * @param x
+     * @param check
      */
     private final void addCount(long x, int check) {
         CounterCell[] as; long b, s;
@@ -2370,6 +2416,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             stride = MIN_TRANSFER_STRIDE; // subdivide range
         if (nextTab == null) {            // initiating
             try {
+                //扩容2倍
                 @SuppressWarnings("unchecked")
                 Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n << 1];
                 nextTab = nt;
@@ -2607,6 +2654,11 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /**
      * Replaces all linked nodes in bin at given index unless table is
      * too small, in which case resizes instead.
+     */
+    /**
+     * 扩容为2倍{@link #transfer(Node[], Node[])}
+     * @param tab
+     * @param index
      */
     private final void treeifyBin(Node<K,V>[] tab, int index) {
         Node<K,V> b; int n, sc;
