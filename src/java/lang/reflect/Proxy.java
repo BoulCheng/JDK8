@@ -416,6 +416,7 @@ public class Proxy implements java.io.Serializable {
         // If the proxy class defined by the given loader implementing
         // the given interfaces exists, this will simply return the cached copy;
         // otherwise, it will create the proxy class via the ProxyClassFactory
+        //proxy-2 从缓存取，如果没有就会生成一个放入缓存
         return proxyClassCache.get(loader, interfaces);
     }
 
@@ -631,11 +632,13 @@ public class Proxy implements java.io.Serializable {
              * Choose a name for the proxy class to generate.
              */
             long num = nextUniqueNumber.getAndIncrement();
+            //proxy-3 生成的代理类的名称
             String proxyName = proxyPkg + proxyClassNamePrefix + num;
 
             /*
              * Generate the specified proxy class.
              */
+            //proxy-4 生成字节码
             byte[] proxyClassFile = ProxyGenerator.generateProxyClass(
                 proxyName, interfaces, accessFlags);
             try {
@@ -716,6 +719,7 @@ public class Proxy implements java.io.Serializable {
         /*
          * Look up or generate the designated proxy class.
          */
+        //proxy-1 查到或生成指定的代理类
         Class<?> cl = getProxyClass0(loader, intfs);
 
         /*
