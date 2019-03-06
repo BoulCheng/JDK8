@@ -45,3 +45,7 @@
     - LongAdder
     - Set projection
     - ForkJoinPool.commonPool()
+    - addCount()
+    - new TreeBin<K,V>()
+    - transfer()
+    - Unsafe
