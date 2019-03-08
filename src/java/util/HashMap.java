@@ -1843,6 +1843,11 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     // Callbacks to allow LinkedHashMap post-actions
+
+    /**
+     * LinkedHashMao LRU caches 移动节点位置
+     * @param p
+     */
     void afterNodeAccess(Node<K,V> p) { }
     void afterNodeInsertion(boolean evict) { }
     void afterNodeRemoval(Node<K,V> p) { }

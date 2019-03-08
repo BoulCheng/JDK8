@@ -96,6 +96,10 @@ public class HashSet<E>
     private transient HashMap<E,Object> map;
 
     // Dummy value to associate with an Object in the backing Map
+    /**
+     * 底层map键对象关联的虚设值
+     * @see #add(Object) {@link #remove(Object)}
+     */
     private static final Object PRESENT = new Object();
 
     /**
