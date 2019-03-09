@@ -771,6 +771,7 @@ public class CopyOnWriteArrayList<E>
             int len = elements.length;
             int added = 0;
             // uniquify and compact elements in cs
+            // 把需要加到elements的元素先加到数组cs尾部，然后再加到elements，同时去重，cs可能有重复元素
             for (int i = 0; i < cs.length; ++i) {
                 Object e = cs[i];
                 if (indexOf(e, elements, 0, len) < 0 &&
