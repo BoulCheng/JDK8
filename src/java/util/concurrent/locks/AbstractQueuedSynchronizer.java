@@ -377,6 +377,9 @@ public abstract class AbstractQueuedSynchronizer
      * expert group, for helpful ideas, discussions, and critiques
      * on the design of this class.
      */
+    /**
+     * 除head外 每个Node都标示一个等待执行获取的线程
+     */
     static final class Node {
         /** Marker to indicate a node is waiting in shared mode */
         static final Node SHARED = new Node();
@@ -519,6 +522,12 @@ public abstract class AbstractQueuedSynchronizer
      * If head exists, its waitStatus is guaranteed not to be
      * CANCELLED.
      */
+    /**
+     * 第一个线程进入排队队列后,此时的head节点是head tail初始化时的空节 head并不代表任何线程，head节点next指向真正的第一个排队线程(排队线程的队头.下一次执行获取的线程)
+     * 随着入队和出队，head节点会被更新为最后一个出队的节点(线程), 同时也会赋值 head.thread = null{@link #setHead(Node)}. 所以head并不代表任何线程，head节点next指向真正的第一个排队线程(排队线程的队头.下一次执行获取的线程)保持不变
+     *
+     * 下一次执行获取的线程是 head.next.thread
+     */
     private transient volatile Node head;
 
     /**
@@ -529,6 +538,9 @@ public abstract class AbstractQueuedSynchronizer
 
     /**
      * The synchronization state.
+     */
+    /**
+     * ReentrantLock: 0 标示没有被任何线程锁定
      */
     private volatile int state;
 
@@ -545,6 +557,10 @@ public abstract class AbstractQueuedSynchronizer
      * Sets the value of synchronization state.
      * This operation has memory semantics of a {@code volatile} write.
      * @param newState the new state value
+     */
+    /**
+     * @see #compareAndSetState(int, int)
+     * @param newState
      */
     protected final void setState(int newState) {
         state = newState;
@@ -580,11 +596,25 @@ public abstract class AbstractQueuedSynchronizer
      * @param node the node to insert
      * @return node's predecessor
      */
+    /**
+     * 入队成功才退出循环
+     * new ReentrantLock();  tail head都为null tail==head返回true
+     *
+     * 如果该方法是第一次被调用，即如果整个队列是首次第一个线程入队，那么会先把tail head初始化为相同的一个空节点，
+     * 然后把该tail节点转化为代表当前线程的节点并且赋值使 tail.pre = head  head.next = tail 且方法最后返回的节点实际是head节点 即代表当前线程的节点的上一个节点
+     * 此时的head节点是head tail初始化时的空节 head并不代表任何线程，head节点next指向真正的第一个排队线程(排队线程的队头.下一次执行获取的线程)
+     * 随着入队和出队，head节点会被更新为最后一个出队的节点(代表一个线程), 同时也会赋值 head.thread = null{@link #setHead(Node)}. 所以head并不代表任何线程，head节点next指向真正的第一个排队线程(排队线程的队头.下一次执行获取的线程)保持不变
+     *
+     *
+     * @param node
+     * @return 方法最后返回的节点是代表当前线程的节点的上一个节点，并不是代表当前线程的节点
+     */
     private Node enq(final Node node) {
         for (;;) {
             Node t = tail;
             if (t == null) { // Must initialize
                 if (compareAndSetHead(new Node()))
+                    //初始化后再次进入循环时 t=tail=head
                     tail = head;
             } else {
                 node.prev = t;
@@ -602,6 +632,11 @@ public abstract class AbstractQueuedSynchronizer
      * @param mode Node.EXCLUSIVE for exclusive, Node.SHARED for shared
      * @return the new node
      */
+    /**
+     *  new ReentrantLock();  tail head都为null tail==head返回true
+     * @param mode
+     * @return 返回代表当前线程的节点
+     */
     private Node addWaiter(Node mode) {
         Node node = new Node(Thread.currentThread(), mode);
         // Try the fast path of enq; backup to full enq on failure
@@ -613,6 +648,7 @@ public abstract class AbstractQueuedSynchronizer
                 return node;
             }
         }
+        //如果未成功入队，则调用enq保证成功入队
         enq(node);
         return node;
     }
@@ -854,6 +890,21 @@ public abstract class AbstractQueuedSynchronizer
      * @param arg the acquire argument
      * @return {@code true} if interrupted while waiting
      */
+    /**
+     * 为已经在等待队列中的线程提供独占模式且不可中断的获取. 即使线程被中断了仍然会继续获取直到获取到
+     * p == head() 代表当前线程的节点的上一个节点是head， 而head节点next指向真正的第一个排队线程，
+     * 因此如果当前线程的排队节点的上一个节点是head节点 则表示在排队队列中刚好轮到当前线程执行获取
+     *
+     * 无论Fair Nofair都可能进入这个方法获取锁
+     *
+     * Nofair锁
+     * While this is not guaranteed to be fair or starvation-free, earlier queued threads are allowed to recontend before later queued threads, and each recontention has an unbiased chance to succeed against incoming threads.
+     * (虽然不能保证这是公平的或无饥饿的，但是允许较早的队列线程在较晚的队列线程之前重新争用，并且每次重新争用都有无偏倚的机会成功争用。)
+     *
+     * @param node 代表当前线程的节点
+     * @param arg
+     * @return 返回获取的过程中是否被中断过
+     */
     final boolean acquireQueued(final Node node, int arg) {
         boolean failed = true;
         try {
@@ -862,16 +913,24 @@ public abstract class AbstractQueuedSynchronizer
                 final Node p = node.predecessor();
                 if (p == head && tryAcquire(arg)) {
                     setHead(node);
+                    /**
+                     * head只有next 其他成员已经在setHead方法里设置为null
+                     * {@link #addWaiter(Node)}中初始化节点时{@link Node#Node(Thread, Node)} 第二个参数Node是{@link Node#EXCLUSIVE}为null 所以p.next = null是可以help GC的
+                     */
                     p.next = null; // help GC
                     failed = false;
                     return interrupted;
                 }
+                /**
+                 * parkAndCheckInterrupt方法里即使线程中断了也会清理调中断标志，但interrupted = true会记录被中断了
+                 */
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     parkAndCheckInterrupt())
                     interrupted = true;
             }
         } finally {
             if (failed)
+                //此时方法被调用后返回未被中断
                 cancelAcquire(node);
         }
     }
@@ -1194,6 +1253,13 @@ public abstract class AbstractQueuedSynchronizer
      *        {@link #tryAcquire} but is otherwise uninterpreted and
      *        can represent anything you like.
      */
+    /**
+     * tryAcquire(arg)返回true则成功获得不再往下执行
+     * 一种简单的情况当 getState()!=0  && current != getExclusiveOwnerThread() 会进行线程排队
+     *
+     * 在获取过程中忽视线程中断，即使线程中断也会继续获取，但如果获取的过程中线程发生过中断，则获取成功会selfInterrupt()中断线程
+     * @param arg
+     */
     public final void acquire(int arg) {
         if (!tryAcquire(arg) &&
             acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
@@ -1358,6 +1424,10 @@ public abstract class AbstractQueuedSynchronizer
      *
      * @return {@code true} if there may be other threads waiting to acquire
      */
+    /**
+     * 注意，由于中断和超时导致的取消可能随时发生，{@code true}返回并不保证任何其他线程获取成功
+     * @return
+     */
     public final boolean hasQueuedThreads() {
         return head != tail;
     }
@@ -1370,6 +1440,10 @@ public abstract class AbstractQueuedSynchronizer
      * constant time.
      *
      * @return {@code true} if there has ever been contention
+     */
+    /**
+     * 查询是否有任何线程争用过此同步器. 即获取方法曾经被阻塞.
+     * @return
      */
     public final boolean hasContended() {
         return head != null;
@@ -1508,6 +1582,12 @@ public abstract class AbstractQueuedSynchronizer
      *         current thread, and {@code false} if the current thread
      *         is at the head of the queue or the queue is empty
      * @since 1.7
+     */
+    /**
+     * 没有等待的线程 或者 等待队列中下一个执行获取的线程刚好是当前线程 则返回false
+     * tail == head 则没有等待队列 {@link #enq(Node)} 且从未有线程曾经等待过
+     * s.thread == Thread.currentThread() 表示等待队列中下一个等待执行获取的线程是当前线程
+     *
      */
     public final boolean hasQueuedPredecessors() {
         // The correctness of this depends on head being initialized

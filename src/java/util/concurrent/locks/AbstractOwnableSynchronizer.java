@@ -61,6 +61,9 @@ public abstract class AbstractOwnableSynchronizer
     /**
      * The current owner of exclusive mode synchronization.
      */
+    /**
+     * 独占模式同步的当前所有者线程
+     */
     private transient Thread exclusiveOwnerThread;
 
     /**
@@ -69,6 +72,10 @@ public abstract class AbstractOwnableSynchronizer
      * This method does not otherwise impose any synchronization or
      * {@code volatile} field accesses.
      * @param thread the owner thread
+     */
+    /**
+     * 设置当前拥有独享访问的线程
+     * null参数标示当前没有线程拥有访问
      */
     protected final void setExclusiveOwnerThread(Thread thread) {
         exclusiveOwnerThread = thread;

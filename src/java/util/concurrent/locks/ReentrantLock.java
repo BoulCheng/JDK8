@@ -126,6 +126,11 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * Performs non-fair tryLock.  tryAcquire is implemented in
          * subclasses, but both need nonfair try for trylock method.
          */
+        /**
+         * 与{@link FairSync#tryAcquire(int)}的唯一差别是少了 !hasQueuedPredecessors() 判断
+         * @param acquires
+         * @return
+         */
         final boolean nonfairTryAcquire(int acquires) {
             final Thread current = Thread.currentThread();
             int c = getState();
@@ -202,6 +207,9 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * Performs lock.  Try immediate barge, backing up to normal
          * acquire on failure.
          */
+        /**
+         * 执行锁定, 尝试立即锁定, 失败则回到正常的获取锁
+         */
         final void lock() {
             if (compareAndSetState(0, 1))
                 setExclusiveOwnerThread(Thread.currentThread());
@@ -227,6 +235,12 @@ public class ReentrantLock implements Lock, java.io.Serializable {
         /**
          * Fair version of tryAcquire.  Don't grant access unless
          * recursive call or no waiters or is first.
+         */
+        /**
+         * 重入 没有已经被其他线程获取并且等待队列会空(包括了第一次被获取) 则直接会成功获取
+         *  tryAcquire to return false if hasQueuedPredecessors() (a method specifically designed to be used by fair synchronizers) returns true, thereby providing a fair FIFO acquisition order
+         *
+         *  hasQueuedPredecessors() 保证了 a fair FIFO acquisition order
          */
         protected final boolean tryAcquire(int acquires) {
             final Thread current = Thread.currentThread();

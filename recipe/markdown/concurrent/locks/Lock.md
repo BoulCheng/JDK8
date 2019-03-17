@@ -24,6 +24,11 @@
 
 - **complex**
     - Memory Synchronization
+    - 锁未获得释放会发生什么 会抛出IllegalMonitorStateException. 只有占有锁的线程才可以释放锁
+        ```
+        if (Thread.currentThread() != getExclusiveOwnerThread())
+                        throw new IllegalMonitorStateException();
+        ```
 
 - The three forms of lock acquisition (interruptible, non-interruptible, and timed) may differ in their performance characteristics, ordering guarantees, or other implementation qualities
 - Further, the ability to interrupt the ongoing acquisition of a lock may not be available in a given Lock class. Consequently, an implementation is not required to define exactly the same guarantees or semantics for all three forms of lock acquisition, nor is it required to support interruption of an ongoing lock acquisition
