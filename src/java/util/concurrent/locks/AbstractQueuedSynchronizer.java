@@ -2023,6 +2023,7 @@ public abstract class AbstractQueuedSynchronizer
             do {
                 if ( (firstWaiter = first.nextWaiter) == null)
                     lastWaiter = null;
+                //nextWaiter设置为null的目的是因为在sync queue中nextWaiter属性都为null，sync queue的下一个节点用next属性，而 wait queue的下一个节点用nextWaiter
                 first.nextWaiter = null;
             } while (!transferForSignal(first) &&
                      (first = firstWaiter) != null);
@@ -2036,6 +2037,7 @@ public abstract class AbstractQueuedSynchronizer
             lastWaiter = firstWaiter = null;
             do {
                 Node next = first.nextWaiter;
+                //nextWaiter设置为null的目的是因为在sync queue中nextWaiter属性都为null，sync queue的下一个节点用next属性，而 wait queue的下一个节点用nextWaiter
                 first.nextWaiter = null;
                 transferForSignal(first);
                 first = next;
