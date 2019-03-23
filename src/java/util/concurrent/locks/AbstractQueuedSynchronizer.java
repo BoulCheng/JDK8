@@ -671,6 +671,10 @@ public abstract class AbstractQueuedSynchronizer
      *
      * @param node the node
      */
+    /**
+     * 唤醒参数节点的下一个节点线程
+     * @param node
+     */
     private void unparkSuccessor(Node node) {
         /*
          * If status is negative (i.e., possibly needing signal) try
@@ -686,6 +690,10 @@ public abstract class AbstractQueuedSynchronizer
          * just the next node.  But if cancelled or apparently null,
          * traverse backwards from tail to find the actual
          * non-cancelled successor.
+         */
+        /**
+         * 正常情况下需要通过LockSupport.unpark唤醒的线程是参数节点的下一个节点
+         * 如果该节点已被取消或为null，则从队尾向前遍历直到找到需要唤醒的线程节点
          */
         Node s = node.next;
         if (s == null || s.waitStatus > 0) {
@@ -850,6 +858,10 @@ public abstract class AbstractQueuedSynchronizer
              * waitStatus must be 0 or PROPAGATE.  Indicate that we
              * need a signal, but don't park yet.  Caller will need to
              * retry to make sure it cannot acquire before parking.
+             */
+            /**
+             * waitStatus must be 0 or PROPAGATE，表示我们需要信号，但还没有park。 在park前调用者会重新确认不能获取
+             * 在释放锁后 Wakes up node's successor{@link #release(int)}
              */
             compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
         }
@@ -1323,6 +1335,11 @@ public abstract class AbstractQueuedSynchronizer
      *        can represent anything you like.
      * @return the value returned from {@link #tryRelease}
      */
+    /**
+     * 释放锁 并 判断队头的节点是被标志为需要唤醒下一个节点线程，需要则唤醒
+     * @param arg
+     * @return
+     */
     public final boolean release(int arg) {
         if (tryRelease(arg)) {
             Node h = head;
@@ -1708,9 +1725,23 @@ public abstract class AbstractQueuedSynchronizer
      * @param node the node
      * @return true if is reacquiring
      */
+    /**
+     *  Returns true if a node, always one that was initially placed on a condition queue, is now waiting to reacquire on sync queue.
+     *  如果一个节点(始终是最初放置在条件队列中的节点)现在正等待在同步队列上重新获取，则返回true。
+     *  如果在condition wait queue的节点被转移到 sync queue则返回true
+     *  只有signal才会转移 {@link ConditionObject#signal()}
+     *  返回true即表明signal并且转移了该wait queue节点
+     * @param node
+     * @return
+     */
     final boolean isOnSyncQueue(Node node) {
+        /**
+         * 如果节点被转移到sync queue则入队sync queue时一定会赋值node.prev不为null
+         * {@link #enq(Node)}
+         */
         if (node.waitStatus == Node.CONDITION || node.prev == null)
             return false;
+        //如果有next则一定是在sync queue 中，因为Condition wait queue 中node下一个节点属性是nextWaiter
         if (node.next != null) // If has successor, it must be on queue
             return true;
         /*
@@ -1747,6 +1778,12 @@ public abstract class AbstractQueuedSynchronizer
      * @return true if successfully transferred (else the node was
      * cancelled before signal)
      */
+    /**
+     * Transfers a node from a condition queue onto sync queue.
+     * 会把waitStatus的Node.CONDITION更新为0
+     * @param node
+     * @return
+     */
     final boolean transferForSignal(Node node) {
         /*
          * If cannot change waitStatus, the node has been cancelled.
@@ -1762,6 +1799,11 @@ public abstract class AbstractQueuedSynchronizer
          */
         Node p = enq(node);
         int ws = p.waitStatus;
+        /**
+         * 入队后尝试更新入队节点的上一节点waitStatus为Node.SIGNAL 用于在释放锁后 Wakes up node's successor{@link #release(int)}
+         * waitStatus > 0 表明该sync queue节点已被取消
+         * If cancelled or attempt to set waitStatus fails, wake up to resync 直接唤醒线程
+         */
         if (ws > 0 || !compareAndSetWaitStatus(p, ws, Node.SIGNAL))
             LockSupport.unpark(node.thread);
         return true;
@@ -1774,6 +1816,11 @@ public abstract class AbstractQueuedSynchronizer
      * @param node the node
      * @return true if cancelled before the node was signalled
      */
+    /**
+     * Returns true if thread was cancelled before being signalled.
+     * @param node
+     * @return
+     */
     final boolean transferAfterCancelledWait(Node node) {
         if (compareAndSetWaitStatus(node, Node.CONDITION, 0)) {
             enq(node);
@@ -1785,6 +1832,12 @@ public abstract class AbstractQueuedSynchronizer
          * incomplete transfer is both rare and transient, so just
          * spin.
          */
+        /**
+         * If we lost out to a signal then we can't proceed until it finishes its enq().  Cancelling during an incomplete transfer is both rare and transient, so just spin.
+         * 如果我们失去了一个信号，那么我们不能继续，直到(在signal)它完成节点的enq()。在一个不完整的转移过程中取消是罕见的，也是短暂的，所以只要旋转。
+         *
+         * 即 if thread was cancelled after being signalled.
+         */
         while (!isOnSyncQueue(node))
             Thread.yield();
         return false;
@@ -1795,6 +1848,11 @@ public abstract class AbstractQueuedSynchronizer
      * Cancels node and throws exception on failure.
      * @param node the condition node for this wait
      * @return previous sync state
+     */
+    /**
+     * 完全释放当前线程的锁，如果释放失败，会把参数节点标志为取消Node.CANCELLED
+     * @param node
+     * @return
      */
     final int fullyRelease(Node node) {
         boolean failed = true;
@@ -1925,9 +1983,17 @@ public abstract class AbstractQueuedSynchronizer
          * Adds a new waiter to wait queue.
          * @return its new wait node
          */
+        /**
+         * ConditionObject会维护一个独立的等待队列
+         * 把当前线程加入该队列队尾.
+         *
+         * Condition wait queue 中node下一个节点属性是nextWaiter
+         * @return
+         */
         private Node addConditionWaiter() {
             Node t = lastWaiter;
             // If lastWaiter is cancelled, clean out.
+            // 保证 t 是未被取消的
             if (t != null && t.waitStatus != Node.CONDITION) {
                 unlinkCancelledWaiters();
                 t = lastWaiter;
@@ -1946,6 +2012,12 @@ public abstract class AbstractQueuedSynchronizer
          * null. Split out from signal in part to encourage compilers
          * to inline the case of no waiters.
          * @param first (non-null) the first node on condition queue
+         */
+        /**
+         * Removes and transfers nodes until hit non-cancelled one or null
+         * 从wait queue的队头开始遍历直到找到没有被取消的节点或遍历完整个队列，并删除遍历路径上的wait queue节点.
+         * 如果找到没有被取消的节点 则转移该节点到sync queue
+         * @param first
          */
         private void doSignal(Node first) {
             do {
@@ -1984,6 +2056,10 @@ public abstract class AbstractQueuedSynchronizer
          * without requiring many re-traversals during cancellation
          * storms.
          */
+        /**
+         * Unlinks cancelled waiter nodes from condition queue.
+         * 判断的条件是 waitStatus != Node.CONDITION
+         */
         private void unlinkCancelledWaiters() {
             Node t = firstWaiter;
             Node trail = null;
@@ -2013,6 +2089,9 @@ public abstract class AbstractQueuedSynchronizer
          *
          * @throws IllegalMonitorStateException if {@link #isHeldExclusively}
          *         returns {@code false}
+         */
+        /**
+         * 当前线程已获得锁才能signal 转移wait queue的一个节点(从队头开始遍历)到sync queue
          */
         public final void signal() {
             if (!isHeldExclusively())
@@ -2109,6 +2188,21 @@ public abstract class AbstractQueuedSynchronizer
          * <li> If interrupted while blocked in step 4, throw InterruptedException.
          * </ol>
          */
+        /**
+         *
+         * 大概步骤: 1.释放锁 2.阻塞当前线程直到被通知或中断 3.重新获得锁
+         * 详细步骤:
+         * 1 把当前线程加入ConditionObject维护的Condition等待队列队尾
+         * 2 当前线程完全释放锁，如果释放失败则1中Condition等待队列中的节点waitStatus会被标志为取消状态，并会抛出IllegalMonitorStateException终止。
+         *      wait queue中的waitStatus = Node.CANCELLED的节点会适时的被移除wait queue(如addConditionWaiter()、unlinkCancelledWaiters) 而且也不会在signal时被转移到sync queue
+         * 3 park阻塞当前线程直到有{@link ConditionObject#signal()}转移该wait queue节点到sync queue 或者 当前线程中断了
+         * 4 其他线程在释放锁{@link #release(int)} 且unparkSuccessor到该节点时unpark该线程后，当前线程重新获取{@link #acquireQueued(Node, int)}锁
+         * 5 如果线程被中断，且中断发生在被signalled之前则会额外执行转移节点到sync queue. 并在await返回后抛出中断异常. 否则无论是在await还是acquire时中断都只是reinterrupts current thread
+         *
+         * 重新获取锁发生在该节点signalled被加入到sync queue后且其他线程释放锁后unparkSuccessor到该节点时unpark该线程
+         * @throws InterruptedException
+         *
+         */
         public final void await() throws InterruptedException {
             if (Thread.interrupted())
                 throw new InterruptedException();
@@ -2116,6 +2210,9 @@ public abstract class AbstractQueuedSynchronizer
             int savedState = fullyRelease(node);
             int interruptMode = 0;
             while (!isOnSyncQueue(node)) {
+                /**
+                 * 其他线程在释放锁后 Wakes up node's successor{@link #release(int)} 会LockSupport.unpark(s.thread)
+                 */
                 LockSupport.park(this);
                 if ((interruptMode = checkInterruptWhileWaiting(node)) != 0)
                     break;
