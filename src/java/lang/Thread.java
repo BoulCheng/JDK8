@@ -211,6 +211,9 @@ class Thread implements Runnable {
      * initialized to indicate thread 'not yet started'
      */
 
+    /**
+     * A zero status value corresponds to state "NEW".
+     */
     private volatile int threadStatus = 0;
 
 
@@ -279,6 +282,17 @@ class Thread implements Runnable {
      * concurrency control constructs such as the ones in the
      * {@link java.util.concurrent.locks} package.
      */
+
+    /**
+     * A hint to the scheduler that the current thread is willing to yield its current use of a processor. 向调度程序提示，当前线程愿意放弃当前对处理器的使用
+     * The scheduler is free to ignore this hint. 调度程序可以忽略此提示。
+     *
+     * Yield is a heuristic attempt to improve relative progression between threads that would otherwise over-utilise a CPU. Yield是一种启发式尝试，旨在改进线程之间的相对进程，否则会过度使用CPU。
+     *
+     * It may also be useful when designing concurrency control constructs. 在设计并发控制结构时，它可能也很有用
+     *
+     * 只是让出CPU使用权，跟释放锁没有关系，也不会释放锁
+     */
     public static native void yield();
 
     /**
@@ -297,6 +311,15 @@ class Thread implements Runnable {
      *          if any thread has interrupted the current thread. The
      *          <i>interrupted status</i> of the current thread is
      *          cleared when this exception is thrown.
+     */
+
+    /**
+     * Causes the currently executing thread to sleep (temporarily cease execution) for the specified number of milliseconds 使当前执行的线程休眠(临时停止执行)指定的毫秒数
+     *
+     * The thread does not lose ownership of any monitors. 线程不会失去任何监视器的所有权.
+     *
+     * @param millis
+     * @throws InterruptedException
      */
     public static native void sleep(long millis) throws InterruptedException;
 
@@ -321,6 +344,9 @@ class Thread implements Runnable {
      *          if any thread has interrupted the current thread. The
      *          <i>interrupted status</i> of the current thread is
      *          cleared when this exception is thrown.
+     */
+    /**
+     *   1 nanosecond = 1.0 × 10-6 milliseconds
      */
     public static void sleep(long millis, int nanos)
     throws InterruptedException {
@@ -361,6 +387,9 @@ class Thread implements Runnable {
      *            AccessController.getContext() if null
      * @param inheritThreadLocals if {@code true}, inherit initial values for
      *            inheritable thread-locals from the constructing thread
+     */
+    /**
+     * if  true, inherit initial values for  inheritable thread-locals from the constructing thread 如果为真，则从构造线程继承可继承的线程局部变量的初始值
      */
     private void init(ThreadGroup g, Runnable target, String name,
                       long stackSize, AccessControlContext acc,
@@ -673,6 +702,30 @@ class Thread implements Runnable {
      *
      * @since 1.4
      */
+
+    /**
+     * The stack size is the approximate number of bytes of address space that the virtual machine is to allocate for this thread's stack. 堆栈大小是虚拟机为这个线程的堆栈分配的地址空间的大约字节数。
+     *
+     * The effect of the stackSize parameter, if any, is highly platform dependent. stackSize参数的影响(如果有的话)高度依赖于平台。
+     *
+     * On some platforms, specifying a higher value for the stackSize parameter may allow a thread to achieve greater recursion depth before throwing a StackOverflowError.在某些平台上，为stackSize参数指定一个较高的值可能允许线程在抛出StackOverflowError之前获得更大的递归深度。
+     *
+     * Similarly, specifying a lower value may allow a greater number of threads to exist concurrently without throwing an OutOfMemoryError (or other internal error). 类似地，指定一个较低的值可能允许同时存在更多的线程，而不会抛出OutOfMemoryError(或其他内部错误)。
+     *
+     * The details of the relationship between the value of the stackSize parameter and the maximum recursion depth and concurrency level are platform-dependent.
+     * On some platforms, the value of the stackSize parameter may have no effect whatsoever.
+     *
+     * The virtual machine is free to treat the stackSize parameter as a suggestion. If the specified value is unreasonably low for the platform, the virtual machine may instead use some platform-specific minimum value; if the specified value is unreasonably high, the virtual machine may instead use some platform-specific maximum.
+     * Likewise, the virtual machine is free to round the specified value up or down as it sees fit (or to ignore it completely).
+     *
+     * Specifying a value of zero for the stackSize parameter will cause this constructor to behave exactly like the Thread(ThreadGroup, Runnable, String) constructor.
+     *
+     *
+     * @param group
+     * @param target
+     * @param name
+     * @param stackSize
+     */
     public Thread(ThreadGroup group, Runnable target, String name,
                   long stackSize) {
         init(group, target, name, stackSize);
@@ -695,6 +748,13 @@ class Thread implements Runnable {
      *               started.
      * @see        #run()
      * @see        #stop()
+     */
+    /**
+     * Causes this thread to begin execution
+     * the Java Virtual Machine calls the run method of this thread.
+     * It is never legal to start a thread more than once. 多次启动线程是不合法的。
+     *
+     * In particular, a thread may not be restarted once it has completed execution. 特别是，线程在完成执行之后可能不会重新启动。
      */
     public synchronized void start() {
         /**
@@ -741,6 +801,10 @@ class Thread implements Runnable {
      * @see     #start()
      * @see     #stop()
      * @see     #Thread(ThreadGroup, Runnable, String)
+     */
+    /**
+     * Subclasses of Thread should override this method.
+     * If this thread was constructed using a separate Runnable run object, then that Runnable object's run method is called; otherwise, this method does nothing and returns.
      */
     @Override
     public void run() {
@@ -1000,6 +1064,10 @@ class Thread implements Runnable {
      * @return  <code>true</code> if this thread is alive;
      *          <code>false</code> otherwise.
      */
+    /**
+     * 未start返回false
+     * @return
+     */
     public final native boolean isAlive();
 
     /**
@@ -1238,6 +1306,13 @@ class Thread implements Runnable {
      *          <i>interrupted status</i> of the current thread is
      *          cleared when this exception is thrown.
      */
+    /**
+     * Waits at most 6 millis milliseconds for this thread to die. A timeout of  0 means to wait forever. 等待线程死亡的时间最多为6毫秒。0意味着永远等待。
+     *
+     *
+     * @param millis
+     * @throws InterruptedException
+     */
     public final synchronized void join(long millis)
     throws InterruptedException {
         long base = System.currentTimeMillis();
@@ -1353,6 +1428,12 @@ class Thread implements Runnable {
      *          if {@link #checkAccess} determines that the current
      *          thread cannot modify this thread
      */
+    /**
+     * This method must be invoked before the thread is started.
+     *
+     * The Java Virtual Machine exits when the only threads running are all daemon threads.
+     * @param on
+     */
     public final void setDaemon(boolean on) {
         checkAccess();
         if (isAlive()) {
@@ -1383,6 +1464,10 @@ class Thread implements Runnable {
      * @exception  SecurityException  if the current thread is not allowed to
      *               access this thread.
      * @see        SecurityManager#checkAccess(Thread)
+     */
+    /**
+     * Determines if the currently running thread has permission to modify this thread.
+     * 确定当前运行的线程是否具有修改此线程的权限。
      */
     public final void checkAccess() {
         SecurityManager security = System.getSecurityManager();
@@ -1433,6 +1518,12 @@ class Thread implements Runnable {
      *          if the current thread cannot get the context ClassLoader
      *
      * @since 1.2
+     */
+    /**
+     * If not set, the default is the ClassLoader context of the parent Thread.  如果没有设置，默认是父线程的类加载器上下文。
+     *  The context ClassLoader of the primordial thread is typically set to the class loader used to load the application. 原始线程的上下文类加载器通常设置为用于加载应用程序的类加载器。
+     *
+     * @return
      */
     @CallerSensitive
     public ClassLoader getContextClassLoader() {
@@ -1760,6 +1851,9 @@ class Thread implements Runnable {
          * reenter a synchronized block/method after calling
          * {@link Object#wait() Object.wait}.
          */
+        /**
+         * 调用{@link Object#wait() Object.wait}.线程进入WAITING 当其他线程notify线程重新去获取锁是才在BLOCKED
+         */
         BLOCKED,
 
         /**
@@ -1794,6 +1888,9 @@ class Thread implements Runnable {
          *   <li>{@link LockSupport#parkNanos LockSupport.parkNanos}</li>
          *   <li>{@link LockSupport#parkUntil LockSupport.parkUntil}</li>
          * </ul>
+         */
+        /**
+         * 相比WAITING多了sleep
          */
         TIMED_WAITING,
 
@@ -1840,6 +1937,20 @@ class Thread implements Runnable {
      * @see #setUncaughtExceptionHandler
      * @see ThreadGroup#uncaughtException
      * @since 1.5
+     */
+    /**
+     * Interface for handlers invoked when a Thread abruptly terminates due to an uncaught exception.
+     * 当线程由于未捕获异常突然终止时调用的处理程序的接口。
+     *
+     * Uncaught exception handling is controlled first by the thread, then by the thread's ThreadGroup object and finally by the default uncaught exception handler.
+     *
+     * 当线程由于未捕获异常即将终止时，JVM会调用{@link #getUncaughtExceptionHandler}并调用{@link UncaughtExceptionHandler#uncaughtException(Thread, Throwable)}
+     *
+     * 如果线程没有设置UncaughtExceptionHandler 则使用ThreadGroup的UncaughtExceptionHandler
+     *
+     * 如果ThreadGroup没有设置UncaughtExceptionHandler 则使用{@linkplain #getDefaultUncaughtExceptionHandler}
+     *
+     * @see #dispatchUncaughtException(Throwable)
      */
     @FunctionalInterface
     public interface UncaughtExceptionHandler {
@@ -1894,6 +2005,17 @@ class Thread implements Runnable {
      * @see ThreadGroup#uncaughtException
      * @since 1.5
      */
+    /**
+     * Set the default handler invoked when a thread abruptly terminates due to an uncaught exception, and no other handler has been defined for that thread.
+     *
+     * Uncaught exception handling is controlled first by the thread, then by the thread's ThreadGroup object and finally by the default uncaught exception handler.
+     *
+     * If the thread does not have an explicit uncaught exception handler set, and the thread's thread group (including parent thread groups) does not specialize its uncaughtException method, then the default handler's uncaughtException method will be invoked.
+     *
+     * @see #dispatchUncaughtException(Throwable)
+     *
+     * 默认的未捕获异常处理也需要设置.
+     */
     public static void setDefaultUncaughtExceptionHandler(UncaughtExceptionHandler eh) {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
@@ -1926,6 +2048,10 @@ class Thread implements Runnable {
      * @since 1.5
      * @return the uncaught exception handler for this thread
      */
+    /**
+     * 如果uncaughtExceptionHandler为null则返回ThreadGroup实例对象
+     * @return
+     */
     public UncaughtExceptionHandler getUncaughtExceptionHandler() {
         return uncaughtExceptionHandler != null ?
             uncaughtExceptionHandler : group;
@@ -1954,6 +2080,10 @@ class Thread implements Runnable {
     /**
      * Dispatch an uncaught exception to the handler. This method is
      * intended to be called only by the JVM.
+     */
+    /**
+     * 向处理程序发送未捕获异常。此方法只打算由JVM调用。
+     * @param e
      */
     private void dispatchUncaughtException(Throwable e) {
         getUncaughtExceptionHandler().uncaughtException(this, e);
