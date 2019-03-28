@@ -89,6 +89,14 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * NEW -> CANCELLED
      * NEW -> INTERRUPTING -> INTERRUPTED
      */
+    /**
+     *
+     * {@link #cancel(boolean)}时如果不可以中断则直接设置为CANCELLED，如果可以中断则先设置为INTERRUPTING，中断执行call的线程后再设置为INTERRUPTED
+     * 只有调用{@link #cancel(boolean)}才会 INTERRUPTING INTERRUPTED
+     *
+     * {@link #run()}中call执行完会先设置为COMPLETING outcome设置完再设置为NORMAL； 如果call执行中排除异常 也会先设置为COMPLETING outcome设置完再设置为NORMAL
+     *
+     */
     private volatile int state;
     private static final int NEW          = 0;
     private static final int COMPLETING   = 1;
@@ -99,12 +107,22 @@ public class FutureTask<V> implements RunnableFuture<V> {
     private static final int INTERRUPTED  = 6;
 
     /** The underlying callable; nulled out after running */
+    /**
+     * nulled out after running {@link #finishCompletion()}
+     */
     private Callable<V> callable;
     /** The result to return or exception to throw from get() */
     private Object outcome; // non-volatile, protected by state reads/writes
     /** The thread running the callable; CASed during run() */
+    /**
+     * {@link #run()} 当前执行call的线程
+     *
+     */
     private volatile Thread runner;
     /** Treiber stack of waiting threads */
+    /**
+     * 等待该FutureTask实例get返回的线程(即调用get的线程)的链表, waiters.thread 是第一个开始等待的线程
+     */
     private volatile WaitNode waiters;
 
     /**
@@ -117,6 +135,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
         Object x = outcome;
         if (s == NORMAL)
             return (V)x;
+        //s >= CANCELLED 都是cancel
         if (s >= CANCELLED)
             throw new CancellationException();
         throw new ExecutionException((Throwable)x);
@@ -148,6 +167,11 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * {@code Future<?> f = new FutureTask<Void>(runnable, null)}
      * @throws NullPointerException if the runnable is null
      */
+    /**
+     * RunnableAdapter 适配器会把Runnable适配为Callable
+     * @param runnable
+     * @param result
+     */
     public FutureTask(Runnable runnable, V result) {
         this.callable = Executors.callable(runnable, result);
         this.state = NEW;       // ensure visibility of callable
@@ -157,6 +181,10 @@ public class FutureTask<V> implements RunnableFuture<V> {
         return state >= CANCELLED;
     }
 
+    /**
+     * 只要不是 NEW 都是 Done
+     * @return
+     */
     public boolean isDone() {
         return state != NEW;
     }
@@ -280,6 +308,10 @@ public class FutureTask<V> implements RunnableFuture<V> {
             // state must be re-read after nulling runner to prevent
             // leaked interrupts
             int s = state;
+            /**
+             * 处理中断
+             * {@link #cancel(boolean)}
+             */
             if (s >= INTERRUPTING)
                 handlePossibleCancellationInterrupt(s);
         }
@@ -293,6 +325,13 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * than once.
      *
      * @return {@code true} if successfully run and reset
+     */
+    /**
+     * Executes the computation without setting its result, and then resets this future to initial state, failing to do so if the computation encounters an exception or is cancelled.
+     * 在不设置结果的情况下执行计算，然后将这个future重置为初始状态，如果计算遇到异常或被取消，则无法这样做。
+     *
+     * 这是为本质上执行多次的任务而设计的。
+     * @return
      */
     protected boolean runAndReset() {
         if (state != NEW ||
@@ -351,7 +390,13 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * stack.  See other classes such as Phaser and SynchronousQueue
      * for more detailed explanation.
      */
+    /**
+     * 等待get返回的线程链表
+     */
     static final class WaitNode {
+        /**
+         * 等待get返回的线程 即调用get的线程
+         */
         volatile Thread thread;
         volatile WaitNode next;
         WaitNode() { thread = Thread.currentThread(); }
@@ -360,6 +405,11 @@ public class FutureTask<V> implements RunnableFuture<V> {
     /**
      * Removes and signals all waiting threads, invokes done(), and
      * nulls out callable.
+     */
+    /**
+     * 只两个两个run方法和cancel方法会在内部调用该方法
+     * 该方法内部会LockSupport.unpark(t); {@link #awaitDone(boolean, long)}方法内park的线程
+     * unpark通知waiters中所有等待的线程
      */
     private void finishCompletion() {
         // assert state > COMPLETING;
@@ -405,6 +455,9 @@ public class FutureTask<V> implements RunnableFuture<V> {
             }
 
             int s = state;
+            /**
+             * s > COMPLETING 后会一定会继续调用 {@link #finishCompletion()} 方法内的park
+             */
             if (s > COMPLETING) {
                 if (q != null)
                     q.thread = null;
@@ -439,6 +492,11 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * race.  This is slow when there are a lot of nodes, but we don't
      * expect lists to be long enough to outweigh higher-overhead
      * schemes.
+     */
+    /**
+     * Tries to unlink a timed-out or interrupted wait node to avoid accumulating garbage.
+     * 尝试断开超时或中断的等待节点的链接，以避免积累垃圾。
+     * @param node
      */
     private void removeWaiter(WaitNode node) {
         if (node != null) {
