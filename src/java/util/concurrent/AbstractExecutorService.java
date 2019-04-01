@@ -83,6 +83,13 @@ public abstract class AbstractExecutorService implements ExecutorService {
      * the underlying task
      * @since 1.6
      */
+    /**
+     * FutureTask里的run方法会调用callable变量的call方法
+     * @param runnable
+     * @param value
+     * @param <T>
+     * @return
+     */
     protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
         return new FutureTask<T>(runnable, value);
     }
@@ -163,6 +170,9 @@ public abstract class AbstractExecutorService implements ExecutorService {
             final long deadline = timed ? System.nanoTime() + nanos : 0L;
             Iterator<? extends Callable<T>> it = tasks.iterator();
 
+            /**
+             * task会被包装成QueueingFuture QueueingFuture里的done方法会把Future放入completionQueue队列，done方法会在FutureTask的run方法的task执行完后被调用
+             */
             // Start one task for sure; the rest incrementally
             futures.add(ecs.submit(it.next()));
             --ntasks;

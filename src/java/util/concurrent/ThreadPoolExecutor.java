@@ -384,6 +384,8 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      *
      * 初始值=RUNNING
      * 每新增一个Worker ctl增1，ctl的初始值和 RUNNING 相等，|RUNNING| - CAPACITY = 1, 因此随着worker的添加，ctl最大值为 -1 <  SHUTDOWN
+     *
+     * TIDYING -> TERMINATED {@link #tryTerminate}
      */
     private final AtomicInteger ctl = new AtomicInteger(ctlOf(RUNNING, 0));
     /**
@@ -661,6 +663,18 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      */
     /**
      * 一个worker代表线程池中一个线程
+     *
+     * Class Worker mainly maintains interrupt control state for threads running tasks, along with other minor bookkeeping
+     * 类Worker主要维护运行任务的线程的中断控制状态，以及其他次要的记帐功能
+     *
+     * This class opportunistically extends AbstractQueuedSynchronizer to simplify acquiring and releasing a lock surrounding each task execution.
+     * 该类巧用地扩展AbstractQueuedSynchronizer，以简化获取和释放每个任务执行周围的锁。
+     *
+     * This protects against interrupts that are intended to wake up a worker thread waiting for a task from instead interrupting a task being run.
+     * 这可以防止中断，这些中断旨在唤醒等待任务的工作线程，而不是中断正在运行的任务。
+     *
+     * Additionally, to suppress interrupts until the thread actually starts running tasks, we initialize lock state to a negative value, and clear it upon start (in runWorker).
+     * 此外，为了在线程实际开始运行任务之前抑制中断，我们将锁状态初始化为负值，并在启动时清除它(在runWorker中)。
      */
     private final class Worker
         extends AbstractQueuedSynchronizer
