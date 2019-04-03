@@ -2,6 +2,7 @@
 
 ## wait
 - wait (类似 Condition#await)
+    - wait()  wait(0, 0)  wait(0) 的完全一样，仅notify通知或中断
     - 概述: 
         - 当前线程拥有该Object的监视器锁的前提调用该方法，然后释放锁，await返回前会重新获取锁
         - This method should only be called by a thread that is the owner of this object's monitor. The current thread must own this object's monitor.
@@ -53,7 +54,9 @@
 
 - public final void wait() throws InterruptedException
     - this method behaves exactly as if it simply performs the call wait(0).
-
+    - Causes the current thread to wait until another thread invokes the notify() method or the notifyAll() method for this object. In other words, this method behaves exactly as if it simply performs the call wait(0).
+    - The current thread must own this object's monitor. The thread releases ownership of this monitor and waits until another thread notifies threads waiting on this object's monitor to wake up either through a call to the notify method or the notifyAll method. The thread then waits until it can re-obtain ownership of the monitor and resumes execution.
+    - As in the one argument version, interrupts and spurious wakeups are possible
 
 ## notify
 
