@@ -33,5 +33,5 @@
         
             ```
         - where neither canProceed nor any other actions prior to the call to park entail locking or blocking.(在调用park之前既不能继续也不能执行任何其他操作的情况下，需要锁定或阻塞。)
-        - Because only one permit is associated with each thread, any intermediary uses of park could interfere with its intended effects.(因为每个线程只有一个许可证，所以公园的任何中间用途都可能干扰其预期的效果。)
+        - Because only one permit is associated with each thread, any intermediary uses of park could interfere with its intended effects.(因为每个线程只有一个许可证，所以park的任何中间用途都可能干扰其预期的效果。)
     
