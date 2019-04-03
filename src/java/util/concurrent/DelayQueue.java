@@ -67,6 +67,11 @@ import java.util.*;
  * @author Doug Lea
  * @param <E> the type of elements held in this collection
  */
+
+/**
+ * DelayQueue内部通过PriorityQueue实现，且new PriorityQueue<E>();是无参构造即comparator为空，那么集合元素必须实现Comparable接口, Delayed接口继承了该Comparable接口刚好用于此
+ * @param <E>
+ */
 public class DelayQueue<E extends Delayed> extends AbstractQueue<E>
     implements BlockingQueue<E> {
 
@@ -88,6 +93,14 @@ public class DelayQueue<E extends Delayed> extends AbstractQueue<E>
      * waiting thread, but not necessarily the current leader, is
      * signalled.  So waiting threads must be prepared to acquire
      * and lose leadership while waiting.
+     */
+    /**
+     * Thread designated to wait for the element at the head of the queue. 指定为等待队列头部元素的线程。
+     * When a thread becomes the leader, it waits only for the next delay to elapse, but other threads await indefinitely. 当一个线程成为领导者时，它只等待下一个延迟过去，而其他线程则无限期地等待。
+     * The leader thread must signal some other thread before returning from take() or poll(...), unless some other thread becomes leader in the interim.
+     * 在从take()或poll(…)返回之前，领导线程必须向其他线程发出信号，除非在此期间其他线程成为领导线程。
+     * Whenever the head of the queue is replaced with an element with an earlier expiration time, the leader field is invalidated by being reset to null, and some waiting thread, but not necessarily the current leader, is signalled.
+     * So waiting threads must be prepared to acquire and lose leadership while waiting.
      */
     private Thread leader = null;
 
@@ -229,6 +242,9 @@ public class DelayQueue<E extends Delayed> extends AbstractQueue<E>
                 }
             }
         } finally {
+            /**
+             * 会不会导致其他await的线程没有被signal 其他线程怎么被唤醒？？？ 其他线程不会被唤醒！
+             */
             if (leader == null && q.peek() != null)
                 available.signal();
             lock.unlock();

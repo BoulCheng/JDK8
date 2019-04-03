@@ -267,6 +267,11 @@ public class ScheduledThreadPoolExecutor
         /**
          * Sets the next time to run for a periodic task.
          */
+        /**
+         * 控制FixedRate 、 FixedDelay两中周期性任务的核心代码
+         * p > 0 标示是FixedRate任务，上一任务执行完后设置下一任务的执行时间为上次任务的执行时间+period，即如果任务的执行时间大于period那么下一次任务的执行时间顺延至上一任务完成时
+         * p < 0 标示是FixedDelay任务，上一任务执行完后设置下一下任务的执行时间为当前时间+period
+         */
         private void setNextRunTime() {
             long p = period;
             if (p > 0)
@@ -555,6 +560,9 @@ public class ScheduledThreadPoolExecutor
      * @throws NullPointerException       {@inheritDoc}
      * @throws IllegalArgumentException   {@inheritDoc}
      */
+    /**
+     * ScheduledFutureTask 成员变量period 值为 period
+     */
     public ScheduledFuture<?> scheduleAtFixedRate(Runnable command,
                                                   long initialDelay,
                                                   long period,
@@ -578,6 +586,9 @@ public class ScheduledThreadPoolExecutor
      * @throws RejectedExecutionException {@inheritDoc}
      * @throws NullPointerException       {@inheritDoc}
      * @throws IllegalArgumentException   {@inheritDoc}
+     */
+    /**
+     * ScheduledFutureTask 成员变量period 值为 -delay
      */
     public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command,
                                                      long initialDelay,
@@ -805,6 +816,9 @@ public class ScheduledThreadPoolExecutor
      * Specialized delay queue. To mesh with TPE declarations, this
      * class must be declared as a BlockingQueue<Runnable> even though
      * it can only hold RunnableScheduledFutures.
+     */
+    /**
+     * TPE ThreadPoolExecutor
      */
     static class DelayedWorkQueue extends AbstractQueue<Runnable>
         implements BlockingQueue<Runnable> {
@@ -1105,6 +1119,13 @@ public class ScheduledThreadPoolExecutor
             }
         }
 
+        /**
+         * 在指定超时时间内没有获得task或获得的task延迟时间没到则返回null
+         * @param timeout
+         * @param unit
+         * @return
+         * @throws InterruptedException
+         */
         public RunnableScheduledFuture<?> poll(long timeout, TimeUnit unit)
             throws InterruptedException {
             long nanos = unit.toNanos(timeout);

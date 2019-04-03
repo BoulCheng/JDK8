@@ -1,0 +1,3 @@
+# ScheduledThreadPoolExecutor
+
+- 四个构造函数keepAliveTime都为0且maximumPoolSize都为Integer.MAX_VALUE，但是阻塞队列是无界队列，因此线程池中最多有核心线程数个线程
