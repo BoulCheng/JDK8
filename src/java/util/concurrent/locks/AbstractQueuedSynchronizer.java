@@ -711,6 +711,10 @@ public abstract class AbstractQueuedSynchronizer
      * propagation. (Note: For exclusive mode, release just amounts
      * to calling unparkSuccessor of head if it needs signal.)
      */
+    /**
+     * Note: For exclusive mode, release just amounts to calling unparkSuccessor of head if it needs signal
+     * 注意:对于独占模式，release只相当于在需要信号时调用head的unparkSuccessor
+     */
     private void doReleaseShared() {
         /*
          * Ensure that a release propagates, even if there are other
@@ -736,6 +740,11 @@ public abstract class AbstractQueuedSynchronizer
                          !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
                     continue;                // loop on failed CAS
             }
+            /**
+             * 如果h还是指向头结点，说明前面这段代码执行过程中没有其他线程对头结点进行过处理
+             * 此时for循环结束
+             * 只唤醒了一个线程
+             */
             if (h == head)                   // loop if head changed
                 break;
         }
@@ -748,6 +757,15 @@ public abstract class AbstractQueuedSynchronizer
      *
      * @param node the node
      * @param propagate the return value from a tryAcquireShared
+     */
+    /**
+     * 将唤醒传播，传播前会判断被传播的节点是否是以共享模式尝试获取执行权限的，如果不是，则传播到该节点处为止（一般情况下，等待队列中都只会都是处于共享模式或者处于独占模式的节点）
+     * 传播即是头结点会依次唤醒后续处于共享状态的节点，这也就是共享锁实现方式，而独占锁并不会传播
+     *
+     * 独占锁：一个节点的线程被唤醒后，其他节点的线程继续等待，等待锁被释放后，释放锁的方法会唤醒下一个节点的线程
+     * 共享锁：一个节点的线程被唤醒后，唤醒自身节点线程的同时，会唤醒AQS队列的下一个节点线程，每个被唤醒的节点都会同时唤醒下一个节点，唤醒依次传播到每一个节点，即AQS队列的所有节点都会被唤醒
+     * @param node
+     * @param propagate
      */
     private void setHeadAndPropagate(Node node, int propagate) {
         Node h = head; // Record old head for check below
@@ -1058,6 +1076,9 @@ public abstract class AbstractQueuedSynchronizer
                 if (p == head) {
                     int r = tryAcquireShared(arg);
                     if (r >= 0) {
+                        /**
+                         * 唤醒下一个线程，每个被唤醒的线程都会唤醒下一个线程，即唤醒会传播
+                         */
                         setHeadAndPropagate(node, r);
                         p.next = null; // help GC
                         failed = false;
