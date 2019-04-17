@@ -1,5 +1,4 @@
-# JDK8源码阅读笔记  
-- 源码注释在对应的源文件
+# JDK8源码阅读笔记 & [源码注释](https://github.com/BoulCheng/JDK8/blob/master/src/java/) 
 
 ## 集合框架
 ### Map
