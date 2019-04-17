@@ -1,4 +1,4 @@
-# JDK8源码阅读笔记 & [源码注释](https://github.com/BoulCheng/JDK8/blob/master/src/java/) 
+# JDK8源码阅读笔记 & [源码注释](https://github.com/BoulCheng/JDK8/blob/master/src/java/) & [随笔Demo](https://github.com/BoulCheng/JDK-Demos) 
 
 ## 集合框架
 ### Map
@@ -90,7 +90,7 @@
 #### [Thread](https://github.com/BoulCheng/JDK8/blob/master/recipe/markdown/concurrent/lang/Thread.md)
 
 ## sort
-#### [Thread](https://github.com/BoulCheng/JDK8/blob/master/recipe/markdown/sort/Comparable.md)
+#### [Comparable](https://github.com/BoulCheng/JDK8/blob/master/recipe/markdown/sort/Comparable.md)
 #### [Comparator](https://github.com/BoulCheng/JDK8/blob/master/recipe/markdown/sort/Comparator.md)
 
 ## Ref
