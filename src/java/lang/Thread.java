@@ -1397,6 +1397,10 @@ class Thread implements Runnable {
      *          <i>interrupted status</i> of the current thread is
      *          cleared when this exception is thrown.
      */
+    /**
+     * After run() finishes, notify() is called by the Thread subsystem
+     * @throws InterruptedException
+     */
     public final void join() throws InterruptedException {
         join(0);
     }

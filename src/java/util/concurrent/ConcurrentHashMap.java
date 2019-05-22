@@ -551,6 +551,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * tree removal about conversion back to plain bins upon
      * shrinkage.
      */
+    /**
+     * 这里包括当前put的节点，所以实际上是第9个节点才会判断是否要执行树化，当数组大小(初始化时)小于64时，不进行树化。
+     */
     static final int TREEIFY_THRESHOLD = 8;
 
     /**
@@ -577,6 +580,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      */
     /**
      * Minimum number of rebinnings per transfer step. Ranges are subdivided to allow multiple resizer threads.  This value serves as a lower bound to avoid resizers encountering excessive memory contention.  The value should be at least DEFAULT_CAPACITY.
+     * 每个转移步骤的最少复归数，即每个线程转移的最小元素个数。总范围被细分以允许多个调整大小的线程。此值用作下限，以避免调整大小器(转移线程)遇到过多的内存争用
      */
     private static final int MIN_TRANSFER_STRIDE = 16;
 
@@ -819,7 +823,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * The next table index (plus one) to split while resizing.
      */
     /**
-     * 即原table的大小 {@link #transfer(Node[], Node[])}
+     * 原表待转移元素的最大索引加1，也是待转移元素个数，和转移时每个线程转移的元素个数(stride)配合使用(如 MIN_TRANSFER_STRIDE)，转移时从原表最大索引元素开始转移，每个线程转移的索引范围为 [transferIndex - stride, transferIndex - 1]
      */
     private transient volatile int transferIndex;
 
@@ -856,6 +860,10 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * sizing to accommodate this many elements.
      * @throws IllegalArgumentException if the initial capacity of
      * elements is negative
+     */
+    /**
+     * sizeCtl 的值会设置为 initialCapacity 最小2的倍数值再 乘2
+     * @param initialCapacity
      */
     public ConcurrentHashMap(int initialCapacity) {
         if (initialCapacity < 0)
@@ -912,6 +920,12 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * @throws IllegalArgumentException if the initial capacity is
      * negative or the load factor or concurrencyLevel are
      * nonpositive
+     */
+    /**
+     * loadFactor  initial table size 只会对初始hash表大小起作用
+     * @param initialCapacity
+     * @param loadFactor
+     * @param concurrencyLevel
      */
     public ConcurrentHashMap(int initialCapacity,
                              float loadFactor, int concurrencyLevel) {
@@ -2198,6 +2212,8 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      */
     /**
      * @see #transfer(Node[], Node[])
+     * 转移的过程中 原表的数组每个元素都会设置该类型的节点 即 hash= -1
+     * 用于标示table正在被转移
      */
     static final class ForwardingNode<K,V> extends Node<K,V> {
         final Node<K,V>[] nextTable;
@@ -2296,6 +2312,8 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /**
      *  Adds to count, and if table is too small and not already resizing, initiates transfer. If already resizing, helps perform transfer if work is available.
      *  Rechecks occupancy after a transfer to see if another resize is already needed because resizings are lagging additions.
+     *
+     *  当 baseCount(包括当前节点) >= sizeCtl 时扩容两倍，baseCount值为键值对，而不仅仅是bin的链表表头或红黑树树根
      * @param x
      * @param check
      */
@@ -2386,6 +2404,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                     }
                 }
             }
+            //该while循环会通过该条件到达进行多次扩容后 sizeCtl >= c
             else if (c <= sc || n >= MAXIMUM_CAPACITY)
                 break;
             else if (tab == table) {

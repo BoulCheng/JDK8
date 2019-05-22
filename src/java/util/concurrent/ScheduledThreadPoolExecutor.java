@@ -246,6 +246,7 @@ public class ScheduledThreadPoolExecutor
                     return -1;
                 else if (diff > 0)
                     return 1;
+                //如果过期时间相等  则通过AtomicLong sequencer 判断
                 else if (sequenceNumber < x.sequenceNumber)
                     return -1;
                 else
@@ -269,7 +270,7 @@ public class ScheduledThreadPoolExecutor
          */
         /**
          * 控制FixedRate 、 FixedDelay两中周期性任务的核心代码
-         * p > 0 标示是FixedRate任务，上一任务执行完后设置下一任务的执行时间为上次任务的执行时间+period，即如果任务的执行时间大于period那么下一次任务的执行时间顺延至上一任务完成时
+         * p > 0 标示是FixedRate任务，上一任务执行完后设置下一任务的执行时间为上次任务的执行时间+period，即如果任务的执行时间大于period那么下一次任务的执行时间顺延至上一任务完成时 因为只有当上一个任务执行完才会设置下任务的执行时间并把该任务提交给线程池处理
          * p < 0 标示是FixedDelay任务，上一任务执行完后设置下一下任务的执行时间为当前时间+period
          */
         private void setNextRunTime() {

@@ -17,3 +17,8 @@
 - put、take共用一个ReentrantLock
 
 - (量小使用，量大使用LinkedBlockingQueue)
+
+- character
+    - 有界必须指定大小且不能再修改
+    - put、take共用一个ReentrantLock 
+    - 可以指定公平 新增 获取

@@ -6,7 +6,7 @@
 
 - Linked queues typically have higher throughput than array-based queues but less predictable performance in most concurrent applications.
 
-- offer()是并发安全的但不阻塞
+- add()并发安全  offer()是并发安全的但不阻塞
 
 - put、take独立一个ReentrantLock
 
@@ -31,3 +31,9 @@
             Node(E x) { item = x; }
         }
     ```
+    
+- character
+    - 非公平锁
+    - put、take独立一个ReentrantLock
+    - 大小无界
+    - 高吞吐量

@@ -478,6 +478,14 @@ public abstract class AbstractQueuedSynchronizer
          * we save a field by using special value to indicate shared
          * mode.
          */
+        /**
+         * sync queue:
+         * 1.独占模式 {@link Node#EXCLUSIVE}
+         * 2.共享模式 {@link Node#SHARED}
+         *
+         * condition queue:
+         * 下一个等待节点
+         */
         Node nextWaiter;
 
         /**

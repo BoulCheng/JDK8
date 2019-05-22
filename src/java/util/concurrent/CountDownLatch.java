@@ -169,6 +169,11 @@ public class CountDownLatch {
             return getState();
         }
 
+        /**
+         * 当count减至0 即state = 0 时 ，await的线程不再park直接return
+         * @param acquires
+         * @return
+         */
         protected int tryAcquireShared(int acquires) {
             return (getState() == 0) ? 1 : -1;
         }
@@ -286,6 +291,11 @@ public class CountDownLatch {
      * thread scheduling purposes.
      *
      * <p>If the current count equals zero then nothing happens.
+     */
+    /**
+     * 共享锁体现在 当有多个线程同时await等待时，当 new CountDownLatch(int count) count减少至0时，所有的等待线程都会从park中唤醒
+     * 每调用一次countDown count 减一；当count减至0 即state = 0 时 会调用一次 {@link AbstractQueuedSynchronizer#doReleaseShared()} ，此时会unpark 调用了await等待的线程队列中的第一个等待线程
+     * 而这个被唤醒的线程会在await中调用 {@link AbstractQueuedSynchronizer#setHeadAndPropagate(AbstractQueuedSynchronizer.Node, int)} 继续通过  {@link AbstractQueuedSynchronizer#doReleaseShared()}唤醒其他调用了await方法的线程
      */
     public void countDown() {
         sync.releaseShared(1);
