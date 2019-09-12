@@ -2,6 +2,7 @@
 
 - One or more variables that together maintain an initially zero long sum.一个或多个变量一起维持一个最初的零的long总和
 - When updates (method add(long)) are contended across threads, the set of variables may grow dynamically to reduce contention. Method sum() (or, equivalently, longValue()) returns the current total combined across the variables maintaining the sum.
+- 当更新(方法add(long))在线程之间发生争用时，变量集可能会动态增长以减少争用
 
 - This class is usually preferable to AtomicLong when multiple threads update a common sum that is used for purposes such as collecting statistics, not for fine-grained synchronization control. 
 - (当多个线程更新用于收集统计信息等目的(而不是用于细粒度同步控制)的公共和时，此类通常比AtomicLong更可取。)
@@ -17,6 +18,16 @@
 - LongAdder在高并发的场景下会比它的前辈————AtomicLong 具有更好的性能，代价是消耗更多的内存空间
 
 - AtomicLong是利用了底层的CAS操作来提供并发性的，比如addAndGet方法调用了Unsafe类的getAndAddLong方法，该方法是个native方法，它的逻辑是采用自旋的方式不断更新目标值，直到更新成功。
+```
+    public final long getAndAddLong(Object var1, long var2, long var4) {
+        long var6;
+        do {
+            var6 = this.getLongVolatile(var1, var2);
+        } while(!this.compareAndSwapLong(var1, var2, var6, var6 + var4));
+
+        return var6;
+    }
+```
 - 在并发量较低的环境下，线程冲突的概率比较小，自旋的次数不会很多。但是，高并发环境下，N个线程同时进行自旋操作，会出现大量失败并不断自旋的情况，此时AtomicLong的自旋会成为瓶颈
 
 - 这就是LongAdder引入的初衷——解决高并发环境下AtomicLong的自旋瓶颈问题。
