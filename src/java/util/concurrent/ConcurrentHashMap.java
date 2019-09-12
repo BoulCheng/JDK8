@@ -552,7 +552,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * shrinkage.
      */
     /**
-     * 这里包括当前put的节点，所以实际上是第9个节点才会判断是否要执行树化，当数组大小(初始化时)小于64时，不进行树化。
+     * 8个节点才会判断是否要执行树化，当数组大小(初始化时)小于64时，不进行树化。
      */
     static final int TREEIFY_THRESHOLD = 8;
 

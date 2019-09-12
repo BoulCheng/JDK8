@@ -1366,6 +1366,8 @@ public abstract class AbstractQueuedSynchronizer
      */
     /**
      * 释放锁 并 判断队头的节点是被标志为需要唤醒下一个节点线程，需要则唤醒
+     *
+     * waitStatus 默认为 0，{@link #acquireQueued(Node, int)}方法中如果有线程在等待，会把当前线程上一个结点的 waitStatus 设置为 -1 (Node.SIGNAL)
      * @param arg
      * @return
      */
@@ -1634,6 +1636,7 @@ public abstract class AbstractQueuedSynchronizer
      * tail == head 则没有等待队列 {@link #enq(Node)} 且从未有线程曾经等待过
      * s.thread == Thread.currentThread() 表示等待队列中下一个等待执行获取的线程是当前线程
      *
+     * ?? (s = h.next) == null  意义：如果等待队列排队过,即使当前队列中没有在等待的线程也返回false，
      */
     public final boolean hasQueuedPredecessors() {
         // The correctness of this depends on head being initialized
