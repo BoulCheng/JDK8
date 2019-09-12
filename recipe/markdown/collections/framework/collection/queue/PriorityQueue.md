@@ -29,3 +29,5 @@
             queue = Arrays.copyOf(queue, newCapacity);
         }
     ```
+    
+- 最小堆：根节点是优先级最低的节点
