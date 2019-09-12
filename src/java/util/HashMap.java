@@ -1965,6 +1965,17 @@ public class HashMap<K,V> extends AbstractMap<K,V>
          * equivalence across rebalancings. Tie-breaking further than
          * necessary simplifies testing a bit.
          */
+        /**
+         * 因为红黑树要求具有可比较性
+         * 当链表转化为红黑树时，哈希码相等且不可比较时，未实现Comparable接口时
+         * 通过这个函数决定两个对象顺序性
+         *
+         * 返回与默认方法hashCode()返回的相同的给定对象的哈希值，无论给定对象的类是否覆盖hashCode()。
+         *
+         * @param a
+         * @param b
+         * @return
+         */
         static int tieBreakOrder(Object a, Object b) {
             int d;
             if (a == null || b == null ||

@@ -505,6 +505,11 @@ public final class System {
      * @return  the hashCode
      * @since   JDK1.1
      */
+    /**
+     * 返回与默认方法hashCode()返回的相同的给定对象的散列代码，无论给定对象的类是否覆盖hashCode()。
+     * @param x
+     * @return
+     */
     public static native int identityHashCode(Object x);
 
     /**

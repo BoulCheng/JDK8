@@ -1,5 +1,22 @@
 # Lock
 
+- synchronized
+    - but forces all lock acquisition and release to occur in a block-structured way. and all locks must be released in the same lexical scope in which they were acquired.
+    - 锁的获取和释放在同一个块结构中，释放和获取在同一个作用域，自动释放
+    - when multiple locks are acquired they must be released in the opposite order
+    - 多个锁的释放需要按获取锁的相反顺序
+    
+    - 确认是否是公平锁？
+
+- Lock
+    - Implementations of the Lock interface allow a lock to be acquired and released in different scopes. care must be taken to ensure that all code that is executed while the lock is held is protected by try-finally or try-catch to ensure that the lock is released when necessary.
+    - 允许锁的获取和释放在不同的作用域
+    - and allowing multiple locks to be acquired and released in any order.
+    - 允许以任何顺序获取和释放多个锁。
+    - A Lock class can also provide behavior and semantics that is quite different from that of the implicit monitor lock, 
+    - such as guaranteed ordering, non-reentrant usage, or deadlock detection. If an implementation provides such specialized semantics then the implementation must document those semantics.
+    
+
 - A lock is a tool for controlling access to a shared resource by multiple threads
 - Lock implementations provide more extensive locking operations than can be obtained using synchronized methods and statements. 
 - They allow more flexible structuring, may have quite different properties, and may support multiple associated Condition objects.

@@ -1,5 +1,8 @@
 # HashMap 
-
+- 链表的节点数大于等于8 并且 哈希表数组长度大于等于64 时链表会转化为红黑树, 
+    - If the current tree appears to have too few nodes, the bin is converted back to a plain bin. (The test triggers somewhere between 2 and 6 nodes, depending on tree structure).
+- 当键值对总数 > 数组长度 * 0.75，进行2倍扩容，注意不会缩容。
+ 
 - Hash table based implementation of the Map interface. (基于哈希表实现的map接口)
 
 - permits null values and the null key.

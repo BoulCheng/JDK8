@@ -1,8 +1,23 @@
 # Object
 
+
+## 等待/通知机制
+- 等待/通知机制，是指一个线程A调用了对象O的wait()方法进入等待状态，而另一个线程B调用了对象O的notify()/notifyAll()方法，线程A收到通知后退出等待队列，进入可运行状态，进而执行后续操作。
+- 上诉两个线程通过对象O来完成交互，而对象上的wait()方法和notify()/notifyAll()方法的关系就如同开关信号一样，用来完成等待方和通知方之间的交互工作
+- synchronized关键字可以将任何一个Object对象作为同步对象来看待，而Java为每个Object都实现了等待/通知（wait/notify）机制的相关方法，它们必须用在synchronized关键字同步的Object的临界区内。通过调用wait()方法可以使处于临界区内的线程进入等待状态，同时释放被同步对象的锁。而notify()方法可以唤醒一个因调用wait操作而处于阻塞状态中的线程，使其进入就绪状态。被重新唤醒的线程会视图重新获得临界区的控制权也就是锁，并继续执行wait方法之后的代码。如果发出notify操作时没有处于阻塞状态中的线程，那么该命令会被忽略。
+  
+- 当方法wait()被执行后，锁自动被释放，但执行完notify()方法后，锁不会自动释放。必须执行完notify()方法所在的synchronized代码块后才释放
+- WAITING TIMED_WAITING 状态不释放锁
+- RUNNABLE 状态可能在等待cpu时间片
+- yield() 让出cpu的使用权，使调度器重新调度: A hint to the scheduler that the current thread is willing to yield its current use of a processor. The scheduler is free to ignore this hint.
+- 当线程呈wait状态时，对线程对象调用interrupt方法会出现InterrupedException异常 Object#wait join sleep 
+
+
 ## wait
 - wait (类似 Condition#await)
     - wait()  wait(0, 0)  wait(0) 的完全一样，仅notify通知或中断
+    - 使调用该方法的线程释放共享资源锁，然后从运行状态退出，进入等待队列，直到被再次唤醒
+    
     - 概述: 
         - 当前线程拥有该Object的监视器锁的前提调用该方法，然后释放锁，await返回前会重新获取锁
         - This method should only be called by a thread that is the owner of this object's monitor. The current thread must own this object's monitor.
@@ -70,7 +85,7 @@
 
 
 - notify()
-
+    - 随机唤醒等待队列中等待同一共享资源的 “一个线程”，并使该线程退出等待队列，进入可运行状态，也就是notify()方法仅通知“一个线程”
     - If any threads are waiting on this object, one of them is chosen to be awakened. The choice is arbitrary and occurs at the discretion of the implementation
     - A thread waits on an object's monitor by calling one of the wait methods.
     
@@ -82,3 +97,5 @@
     
 - notifyAll()
     - Wakes up all threads that are waiting on this object's monitor.
+    - 使所有正在等待队列中等待同一共享资源的 “全部线程” 退出等待队列，进入可运行状态。此时，优先级最高的那个线程最先执行，但也有可能是随机执行，这取决于JVM虚拟机的实现
+      

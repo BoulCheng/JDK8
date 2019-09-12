@@ -1,5 +1,12 @@
 # AbstractQueuedSynchronizer
-
+- tip
+    - (该抽象类的子类应该定义为(某个类-如Lock锁的实现类)非公共内部帮助器类，用于实现其封闭类的同步属性。)
+    - This class supports either or both a default exclusive mode and a shared mode.(该类支持默认独占模式和共享模式中的一种或两种)
+            - When acquired in exclusive mode, attempted acquires by other threads cannot succeed.
+            - Shared mode acquires by multiple threads may (but need not) succeed.
+    - This class defines a nested AbstractQueuedSynchronizer.ConditionObject class that can be used as a Condition implementation by subclasses supporting exclusive mode for which method isHeldExclusively() reports whether synchronization is exclusively held with respect to the current thread, method release(int) invoked with the current getState() value fully releases this object, and acquire(int), given this saved state value, eventually restores this object to its previous acquired state.
+    
+    
 - Provides a framework for implementing blocking locks and related synchronizers (semaphores, events, etc) that rely on first-in-first-out (FIFO) wait queues
 - (提供一个框架来实现依赖于先进先出(FIFO)等待队列的阻塞锁和相关同步器(信号量、事件等))
 
