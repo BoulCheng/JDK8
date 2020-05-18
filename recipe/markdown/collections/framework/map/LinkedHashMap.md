@@ -51,7 +51,8 @@
     }
 
     ```
-    
+- LRU-最近最久未使用算法, 最久未被使用的元素被淘汰， 继承LinkedHashMap的removeEldestEntry方法可以实现缓存的大小限制
+- LFU（Least Frequently Used ，最近最少使用算法，最近最少次数被使用的元素被淘汰， 二叉堆来选择频率最小的元素，这样的实现比较高效。最终实现策略为最小堆+哈希表
 - accessOrder-LRU: A special constructor is provided to create a linked hash map whose order of iteration is the order in which its entries were last accessed, from least-recently accessed to most-recently (access-order). This kind of map is well-suited to building LRU caches. In particular, operations on collection-views do not affect the order of iteration of the backing map.
     ```
     public LinkedHashMap(int initialCapacity,
@@ -214,5 +215,5 @@
     
 - The spliterators returned by the spliterator method of the collections returned by all of this class's collection view methods are late-binding, fail-fast, and additionally report Spliterator.ORDERED.
   
-- LinkedHashMap数据结构(数组 + 单链表 + 红黑树) (假设图片中红黄箭头代表元素添加顺序，蓝箭头代表单链表各个元素的存储顺序。head 表示双向链表头部，tail 代表双向链表尾部)
+- LinkedHashMap数据结构(数组 + 单链表 + 红黑树 + 双向链表(LRU)) (假设图片中红黄箭头代表元素添加顺序，蓝箭头代表单链表各个元素的存储顺序。head 表示双向链表头部，tail 代表双向链表尾部)
 ![](../../../../picture/LinkedHashMap数据结构.jpg)
