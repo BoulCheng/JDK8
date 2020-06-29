@@ -116,7 +116,7 @@ package java.lang.ref;
  *
  * ② WeakReference引用过的heap对象被声明为finalizable。
  *
- * ③ 当heap对象的finalize()方法被运行而且该对象占用的内存被释放时，WeakReference对象就被添加到它的ReferenceQueue（如果后者存在的话）。
+ * ③ 当heap对象的finalize()方法被运行而且该对象占用的内存被释放时 (是否释放不确定)，WeakReference对象就被添加到它的ReferenceQueue（如果后者存在的话）。
  *
  *
  * D、 GC发现一个只有虚引用的对象内存，那么：
@@ -132,6 +132,23 @@ package java.lang.ref;
  *
  *
  * SoftReference具有构建Cache系统的特质，因此我们可以结合哈希表实现一个简单的缓存系统。这样既能保证能够尽可能多的缓存信息，又可以保证Java虚拟机不会因为内存泄露而抛出OutOfMemoryError。这种缓存机制特别适合于内存对象生命周期长，且生成内存对象的耗时比较长的情况，例如缓存列表封面图片等。对于一些生命周期较长，但是生成内存对象开销不大的情况，使用WeakReference能够达到更好的内存管理的效果
+ *
+ *
+ *
+ *
+ * 一个简单的对象生命周期为，Unfinalized、Finalizable、Finalized、Reclaimed。
+ * 在对象的销毁过程中，按照对象的finalize()的执行情况，可以分为以下几种，系统会记录对象的对应状态。
+ * unfinalized
+ * 没有执行finalize()，系统也不准备执行。
+ *
+ * finalizable
+ * 可以执行finalize()了，系统会在随后的某个时间执行finalize。
+ *
+ * finalized
+ * 该对象的finalize()已经被执行了。
+ * GC怎么来保持对finalizable()的对象的追踪呢。GC有一个Queue，叫做F-Queue，所有对象在变为finalizable的时候会加入到该Queue，然后等待GC执行它的finalize()。
+ *
+ *
  * @param <T>
  */
 public class ReferenceQueue<T> {
