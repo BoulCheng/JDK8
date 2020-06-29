@@ -676,6 +676,9 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * Additionally, to suppress interrupts until the thread actually starts running tasks, we initialize lock state to a negative value, and clear it upon start (in runWorker).
      * 此外，为了在线程实际开始运行任务之前抑制中断，我们将锁状态初始化为负值，并在启动时清除它(在runWorker中)。
      */
+    /**
+     * 实现AbstractQueuedSynchronizer 用于标示当前worker线程是否启动(state为-1标示未启动)，也可以标示当前worker线程正在处理任务(state为1)，空闲(state为0可以获得锁)
+     */
     private final class Worker
         extends AbstractQueuedSynchronizer
         implements Runnable
@@ -697,6 +700,11 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         /**
          * Creates with given first task and thread from ThreadFactory.
          * @param firstTask the first task (null if none)
+         */
+        /**
+         * 注意这里Worker初始化的时候，会通过setState(-1)将state设置为-1，并在runWorker()方法中置为0，上文说过Worker是利用state这个变量来表示锁的状态，那么加锁的操作就是通过CAS将state从0改成1，那么初始化的时候改成-1，也就是表示在Worker启动之前，都不允许加锁操作，
+         * 再看interruptIfStarted()以及interruptIdleWorkers()方法，这两个方法在尝试中断Worker之前，都会先加锁或者判断state是否大于0，因此这里的将state设置为-1，就是为了禁止中断操作，并在runWorker中置为0，也就是说只能在Worker启动之后才能够中断Worker。
+         * 另外线程启动之后，其实就是调用了runWorker方法
          */
         Worker(Runnable firstTask) {
             //初始state 为-1
@@ -1196,6 +1204,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                     return r;
                 timedOut = true;
             } catch (InterruptedException retry) {
+                // 可以响应线程池关闭操作的线程中断操作
                 /**
                  * 如果此worker发生了中断，则重新进入循环
                  * 如果开发者将 maximumPoolSize 调小了，导致其小于当前的 workers 数量
@@ -1259,7 +1268,25 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         try {
             //while循环不断地从等待队列中获取任务并执行，firstTask如果指定那么第一个任务不需要从队列中获取
             while (task != null || (task = getTask()) != null) {
-                //每个worker线程的串行执行task(提交给线程池的runnable或callable) 每个task执行前都需要获得锁
+//
+//                void shutdownAndAwaitTermination(ExecutorService pool) {
+//                    pool.shutdown(); // Disable new tasks from being submitted
+//                    try {
+//                        // Wait a while for existing tasks to terminate
+//                        if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
+//                            pool.shutdownNow(); // Cancel currently executing tasks
+//                            // Wait a while for tasks to respond to being cancelled
+//                            if (!pool.awaitTermination(60, TimeUnit.SECONDS))
+//                                System.err.println("Pool did not terminate");
+//                        }
+//                    } catch (InterruptedException ie) {
+//                        // (Re-)Cancel if current thread also interrupted
+//                        pool.shutdownNow();
+//                        // Preserve interrupt status
+//                        Thread.currentThread().interrupt();
+//                    }
+//                }
+                // 线程池中 Worker 执行前为什么要加锁? 标示当前worker线程正在处理任务 不处于空闲状态。用于处理ExecutorService 的关闭操作
                 w.lock();
                 // If pool is stopping, ensure thread is interrupted;
                 // if not, ensure thread is not interrupted.  This
