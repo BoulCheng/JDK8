@@ -480,6 +480,31 @@ public final class Method extends Executable {
      * @exception ExceptionInInitializerError if the initialization
      * provoked by this method fails.
      */
+    /**
+     * import:
+     * <p>If the underlying method is static, then the specified {@code obj}
+     * argument is ignored. It may be null.
+     *
+     * <p>If the underlying method is static, the class that declared
+     * the method is initialized if it has not already been initialized.
+     *
+     * <p>If the underlying method is an instance method, it is invoked
+     * using dynamic method lookup as documented in The Java Language
+     * Specification, Second Edition, section 15.12.4.4; in particular,
+     * overriding based on the runtime type of the target object will occur.
+     *
+     * <p>If the method completes normally, the value it returns is
+     * returned to the caller of invoke; if the value has a primitive
+     * type, it is first appropriately wrapped in an object. However,
+     * if the value has the type of an array of a primitive type, the
+     * elements of the array are <i>not</i> wrapped in objects; in
+     * other words, an array of primitive type is returned.  If the
+     * underlying method return type is void, the invocation returns
+     * null.
+     *
+     * obj is an instance of declaring class {@link Method#getDeclaringClass()}
+     * otherwise, throw Exception java.lang.IllegalArgumentException: object is not an instance of declaring class
+     */
     @CallerSensitive
     public Object invoke(Object obj, Object... args)
         throws IllegalAccessException, IllegalArgumentException,

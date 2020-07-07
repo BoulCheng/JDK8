@@ -564,15 +564,23 @@ public class Proxy implements java.io.Serializable {
         // next number to use for generation of unique proxy class names
         private static final AtomicLong nextUniqueNumber = new AtomicLong();
 
+        /**
+         * 真正创建类的方法
+         * @param loader
+         * @param interfaces
+         * @return
+         */
         @Override
         public Class<?> apply(ClassLoader loader, Class<?>[] interfaces) {
 
+            // IdentityHashMap  两个引用相同的key(== 判断)才判断为相等，而普通map实现通过key是否相等通过key的equals判断
             Map<Class<?>, Boolean> interfaceSet = new IdentityHashMap<>(interfaces.length);
             for (Class<?> intf : interfaces) {
                 /*
                  * Verify that the class loader resolves the name of this
                  * interface to the same Class object.
                  */
+                //1 接口可以被加载
                 Class<?> interfaceClass = null;
                 try {
                     interfaceClass = Class.forName(intf.getName(), false, loader);
@@ -586,6 +594,7 @@ public class Proxy implements java.io.Serializable {
                  * Verify that the Class object actually represents an
                  * interface.
                  */
+                //2 代理的类必须是接口
                 if (!interfaceClass.isInterface()) {
                     throw new IllegalArgumentException(
                         interfaceClass.getName() + " is not an interface");
@@ -593,6 +602,7 @@ public class Proxy implements java.io.Serializable {
                 /*
                  * Verify that this interface is not a duplicate.
                  */
+                //3 代理接口不能重复
                 if (interfaceSet.put(interfaceClass, Boolean.TRUE) != null) {
                     throw new IllegalArgumentException(
                         "repeated interface: " + interfaceClass.getName());
@@ -607,6 +617,7 @@ public class Proxy implements java.io.Serializable {
              * proxy class will be defined in the same package.  Verify that
              * all non-public proxy interfaces are in the same package.
              */
+            //4 non-public interfaces can not from different packages
             for (Class<?> intf : interfaces) {
                 int flags = intf.getModifiers();
                 if (!Modifier.isPublic(flags)) {
@@ -633,15 +644,18 @@ public class Proxy implements java.io.Serializable {
              */
             long num = nextUniqueNumber.getAndIncrement();
             //proxy-3 生成的代理类的名称
+            //5 public接口代理类的名称 com.sun.proxy.$Proxy + num
             String proxyName = proxyPkg + proxyClassNamePrefix + num;
 
             /*
              * Generate the specified proxy class.
              */
             //proxy-4 生成字节码
+            //6 生成代理类 .class文件并返回代理类的字节流
             byte[] proxyClassFile = ProxyGenerator.generateProxyClass(
                 proxyName, interfaces, accessFlags);
             try {
+                //7 字节流放入虚拟机生成Class对象
                 return defineClass0(loader, proxyName,
                                     proxyClassFile, 0, proxyClassFile.length);
             } catch (ClassFormatError e) {
@@ -701,6 +715,25 @@ public class Proxy implements java.io.Serializable {
      *          argument or any of its elements are {@code null}, or
      *          if the invocation handler, {@code h}, is
      *          {@code null}
+     */
+
+    /**
+     * Class<?>[] interfaces, 数组如果多个接口，那么生成的代理类实现多个接口
+     * 通过 InvocationHandler 实现类的实例来实例化代理类 进而代理真实对象， 代理类的实例只能赋值给 Class<?>[] interfaces 中的接口
+     * 在 InvocationHandler 可以通过Method的声明接口 判断方法是属于哪个接口的，进而通过该接口的实现类的实例调用方法，实现代理真实对象
+     *
+     * 如果多个接口方法名和参数相同 那么该方法只属于 Class<?>[] interfaces 中顺序靠前的接口
+     */
+    /**
+     * 1-查到或生成指定的代理类
+     *
+     * 2-用指定InvocationHandler调用代理类的构造器
+     *
+     * @param loader
+     * @param interfaces
+     * @param h
+     * @return
+     * @throws IllegalArgumentException
      */
     @CallerSensitive
     public static Object newProxyInstance(ClassLoader loader,

@@ -97,6 +97,14 @@ final class WeakCache<K, P, V> {
      *                              {@code subKeyFactory} or {@code value}
      *                              calculated by {@code valueFactory} is null.
      */
+    /**
+     * key : ClassLoader 引用相同判断为相同key (CacheKey实例)
+     * sub-key : Class<?>... interfaces KeyFactory使用接口类对象数组生成 相同的sub-key接口类对象数组对应位置的接口引用相同 (Proxy$Key1 Key2 KeyX实例)
+     * value: 代理类对象(Class实例) ProxyClassFactory生成的CacheValue实例 (为了实现值的延迟同步构造，{@link #map} 中value Supplier 第一次放的是Factory实例 后面通过Factory#get方法生成CacheValue实例后会更新为该CacheValue实例 )
+     * 相同的CacheValue 代理类引用相同(compare by identity)
+     *
+     * key sub-key value 都使用WeakReference引用 以避免内存泄漏
+     */
     public V get(K key, P parameter) {
         Objects.requireNonNull(parameter);
 
@@ -124,6 +132,7 @@ final class WeakCache<K, P, V> {
         while (true) {
             if (supplier != null) {
                 // supplier might be a Factory or a CacheValue<V> instance
+                // supplier might be a Factory or a CacheValue<V> instance 为了同步创建代理类
                 V value = supplier.get();
                 if (value != null) {
                     return value;
@@ -184,6 +193,9 @@ final class WeakCache<K, P, V> {
         return reverseMap.size();
     }
 
+    /**
+     * refQueue 可用于通知 缓存失效了
+     */
     private void expungeStaleEntries() {
         CacheKey<K> cacheKey;
         while ((cacheKey = (CacheKey<K>)refQueue.poll()) != null) {
@@ -194,6 +206,15 @@ final class WeakCache<K, P, V> {
     /**
      * A factory {@link Supplier} that implements the lazy synchronized
      * construction of the value and installment of it into the cache.
+     */
+    /**
+     * 实现值的延迟同步构造并将其安装到缓存中的工厂。
+     * 为了实现值的同步 生成 CacheValue 的同步
+     *
+     * synchronized V get() 是同步的
+     *
+     * 所以{@link #map} 中value Supplier 第一次放的是Factory实例 后面通过Factory#get方法生成CacheValue实例后会更新为该CacheValue实例
+     *
      */
     private final class Factory implements Supplier<V> {
 
@@ -210,6 +231,10 @@ final class WeakCache<K, P, V> {
             this.valuesMap = valuesMap;
         }
 
+        /**
+         * 同步创建代理类
+         * @return
+         */
         @Override
         public synchronized V get() { // serialize access
             // re-check
@@ -243,6 +268,9 @@ final class WeakCache<K, P, V> {
             reverseMap.put(cacheValue, Boolean.TRUE);
 
             // try replacing us with CacheValue (this should always succeed)
+            /**
+             * {@link #map} 中value Supplier 第一次放的是Factory实例 后面通过Factory#get方法生成CacheValue实例后会更新为该CacheValue实例
+             */
             if (!valuesMap.replace(subKey, this, cacheValue)) {
                 throw new AssertionError("Should not reach here");
             }
