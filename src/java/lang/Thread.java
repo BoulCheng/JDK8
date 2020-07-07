@@ -291,7 +291,8 @@ class Thread implements Runnable {
      *
      * It may also be useful when designing concurrency control constructs. 在设计并发控制结构时，它可能也很有用
      *
-     * 只是让出CPU使用权，跟释放锁没有关系，也不会释放锁
+     * 只是让出CPU使用权，跟释放锁没有关系，也不会释放锁,调整线程的相对进度,
+     * 如果yield成功让出cpu使用权 线程依然在{@link State#RUNNABLE}状态，只是在等待处理器 并非真正在执行
      */
     public static native void yield();
 
