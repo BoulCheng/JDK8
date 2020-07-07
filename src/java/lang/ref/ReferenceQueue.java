@@ -34,8 +34,8 @@ package java.lang.ref;
  */
 
 /**
- * 通常我们将其ReferenceQueue翻译为引用队列，换言之就是存放引用的队列，保存的是Reference对象。
- * 其作用在于Reference对象所引用的对象被GC回收时，该Reference对象将会被加入引用队列中（ReferenceQueue）的队列末尾
+ * 通常我们将其ReferenceQueue翻译为引用队列，换言之就是存放引用的队列，保存的是Reference对象
+ * 其作用在于Reference对象所引用的对象被GC回收时，该Reference对象将会被加入引用队列中（ReferenceQueue）的队列末尾，可用于通知缓存失效了，在jdk代理源码中可以体现
  *
  * 同样弱引用也可以和一个引用队列（ReferenceQueue）联合使用，如果弱引用所引用的对象被GC回收了，Java虚拟机就会把这个弱引用加入到与之关联的引用队列中，以便在恰当的时候将该弱引用回收。
  *
