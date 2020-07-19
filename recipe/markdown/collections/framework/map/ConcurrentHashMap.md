@@ -3,6 +3,7 @@
 
 - 当键值对总数 > 数组长度 * 0.75，进行2倍扩容，注意不会缩容。
 
+- 遍历的结果只能是遍历开始时已经完成的更新操作的结果，一个key的更新操作先行发生于读取该key本次更新目标值的操作。
 
 - A hash table supporting full concurrency of retrievals and high expected concurrency for updates.
 
