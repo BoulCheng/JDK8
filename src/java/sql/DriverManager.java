@@ -82,7 +82,7 @@ public class DriverManager {
 
 
     // List of registered JDBC drivers
-    private final static CopyOnWriteArrayList<DriverInfo> registeredDrivers = new CopyOnWriteArrayList<>();
+    private final static CopyOnWriteArrayList<DriverInfo> registeredDrivers = new CopyOnWriteArrayList<>(); // 在Driver实现类初始化的时候会调用DriverManager#registerDriver(Driver)方法把Driver实现类实例注册到这里 //Driver实现类的初始化通过spi实例化Driver实现类而触发
     private static volatile int loginTimeout = 0;
     private static volatile java.io.PrintWriter logWriter = null;
     private static volatile java.io.PrintStream logStream = null;
@@ -209,6 +209,8 @@ public class DriverManager {
     }
 
     /**
+     * 获取数据库连接
+     *
      * Attempts to establish a connection to the given database URL.
      * The <code>DriverManager</code> attempts to select an appropriate driver from
      * the set of registered JDBC drivers.
@@ -599,6 +601,7 @@ public class DriverManager {
                  * packaged as service and that service is there in classpath.
                  */
                 try{
+                    // 此操作会加载服务接口(Driver)实现类 并实例化接口(Driver)实现类
                     while(driversIterator.hasNext()) {
                         driversIterator.next();
                     }
@@ -661,7 +664,7 @@ public class DriverManager {
             if(isDriverAllowed(aDriver.driver, callerCL)) {
                 try {
                     println("    trying " + aDriver.driver.getClass().getName());
-                    Connection con = aDriver.driver.connect(url, info);
+                    Connection con = aDriver.driver.connect(url, info); // 调用具体Driver实现类(具体厂商数据库驱动)的 connect 方法获取连接
                     if (con != null) {
                         // Success!
                         println("getConnection returning " + aDriver.driver.getClass().getName());
