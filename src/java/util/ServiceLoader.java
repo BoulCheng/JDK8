@@ -186,7 +186,7 @@ public final class ServiceLoader<S>
     implements Iterable<S>
 {
 
-    private static final String PREFIX = "META-INF/services/";
+    private static final String PREFIX = "META-INF/services/"; //以 服务接口全限定名 为文件名的文件放入该路径下 文件内容为接口实现类的全限定名
 
     // The class or interface representing the service being loaded
     private final Class<S> service;
@@ -315,7 +315,7 @@ public final class ServiceLoader<S>
                 fail(service, "Error closing configuration file", y);
             }
         }
-        return names.iterator();
+        return names.iterator(); // names为当前文件里配置的所有服务接口实现类全限定名集合
     }
 
     // Private inner class implementing fully-lazy provider lookup
@@ -341,7 +341,7 @@ public final class ServiceLoader<S>
             }
             if (configs == null) {
                 try {
-                    String fullName = PREFIX + service.getName();
+                    String fullName = PREFIX + service.getName(); // 加载classpath下所有文件名为fullName的文件
                     if (loader == null)
                         configs = ClassLoader.getSystemResources(fullName);
                     else
@@ -367,7 +367,7 @@ public final class ServiceLoader<S>
             nextName = null;
             Class<?> c = null;
             try {
-                c = Class.forName(cn, false, loader);
+                c = Class.forName(cn, false, loader); // 加载服务接口实现类
             } catch (ClassNotFoundException x) {
                 fail(service,
                      "Provider " + cn + " not found");
@@ -377,8 +377,8 @@ public final class ServiceLoader<S>
                      "Provider " + cn  + " not a subtype");
             }
             try {
-                S p = service.cast(c.newInstance());
-                providers.put(cn, p);
+                S p = service.cast(c.newInstance()); // 实例化接口实现类
+                providers.put(cn, p); // 保存服务接口实现类实例
                 return p;
             } catch (Throwable x) {
                 fail(service,
@@ -511,6 +511,8 @@ public final class ServiceLoader<S>
     }
 
     /**
+     * 将服务接口放入LazyIterator
+     *
      * Creates a new service loader for the given service type, using the
      * current thread's {@linkplain java.lang.Thread#getContextClassLoader
      * context class loader}.
