@@ -30,8 +30,12 @@ import java.io.IOException;
 
 
 /**
- * A token representing the registration of a {@link SelectableChannel} with a
- * {@link Selector}.
+ * 具体实现类组合了 具体的SelectableChannel实现类和具体的Selector实现类且保存了一系列Operation-set bit(interestOps)
+ * A token representing the registration of a {@link SelectableChannel} with a {@link Selector}.
+ *
+ * {@link AbstractSelectableChannel#addKey} {@link AbstractSelectableChannel#findKey}
+ * AbstractSelectableChannel 有一个SelectionKey数组用于缓存其对应的SelectionKey集合，而每个SelectionKey都组合了对应的注册的Selector
+ * 因此实际上 每个AbstractSelectableChannel注册Selector只会产生唯一一个SelectionKey，无论注册了几个 Operation-set bit 或者反复注册 Operation-set bit
  *
  * <p> A selection key is created each time a channel is registered with a
  * selector.  A key remains valid until it is <i>cancelled</i> by invoking its
@@ -371,6 +375,8 @@ public abstract class SelectionKey {
         );
 
     /**
+     * attachment
+     *
      * Attaches the given object to this key.
      *
      * <p> An attached object may later be retrieved via the {@link #attachment()

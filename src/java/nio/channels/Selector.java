@@ -330,6 +330,11 @@ public abstract class Selector implements Closeable {
         throws IOException;
 
     /**
+     * blocking:
+     * at least one channel is selected
+     * this selector's {@link #wakeup wakeup} method is invoked
+     * the current thread is interrupted
+     *
      * Selects a set of keys whose corresponding channels are ready for I/O
      * operations.
      *

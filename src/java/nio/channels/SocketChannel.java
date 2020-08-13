@@ -464,6 +464,13 @@ public abstract class SocketChannel
      * @throws  NotYetConnectedException
      *          If this channel is not yet connected
      */
+    /**
+     * 返回的是-1，表示连接关闭了,已经读到了流的末尾
+     * 如当服务端调用SocketChannel#close()关闭连接  那么客户端会触发一个isReadable为true的SelectionKey并且调用SocketChannel#read 返回-1
+     * @param dst
+     * @return
+     * @throws IOException
+     */
     public abstract int read(ByteBuffer dst) throws IOException;
 
     /**

@@ -48,6 +48,16 @@ import java.nio.ByteBuffer;
 public interface ReadableByteChannel extends Channel {
 
     /**
+     *
+     * An attempt is made to read up to r bytes from the channel, where r is the number of bytes remaining in the buffer, that is, dst.remaining(), at the moment this method is invoked.
+     *
+     * A socket channel in non-blocking mode,for example, cannot read any more bytes than are immediately available from the socket's input buffer; similarly, a file channel cannot read any more bytes than remain in the file.
+     * It is guaranteed, however, that if a channel is in blocking mode and there is at least one byte remaining in the buffer then this method will block until at least one byte is read.
+     *
+     * This method may be invoked at any time.  If another thread has already initiated a read operation upon this channel, however, then an invocation of this method will block until the first operation is complete
+     */
+
+    /**
      * Reads a sequence of bytes from this channel into the given buffer.
      *
      * <p> An attempt is made to read up to <i>r</i> bytes from the channel,
