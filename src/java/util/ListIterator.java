@@ -57,6 +57,21 @@ package java.util;
  * @see List#listIterator()
  * @since   1.2
  */
+
+/**
+ * 1.从任意位置开始遍历
+ * 2.任意方向遍历 向前向后遍历
+ * 3.遍历时更新list 新增和修改 ； 删除 继承Iterator
+ * 4.获取当前遍历的位置
+ *
+ *
+ * Iterator:
+ * 1.只能从头遍历
+ * 2.只能向后遍历
+ * 3.更新只支持删除操作
+ * 4.不支持获取当前遍历的位置
+ * @param <E>
+ */
 public interface ListIterator<E> extends Iterator<E> {
     // Query Operations
 
