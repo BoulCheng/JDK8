@@ -2029,6 +2029,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     }
                 }
             }
+            // 将红黑树的根移到桶的第一个位置
             moveRootToFront(tab, root);
         }
 
@@ -2299,6 +2300,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return root;
         }
 
+        /**
+         * 注意区分 变量 和 变量的引用值
+         * @param root
+         * @param x
+         * @param <K>
+         * @param <V>
+         * @return
+         */
         static <K,V> TreeNode<K,V> balanceInsertion(TreeNode<K,V> root,
                                                     TreeNode<K,V> x) {
             x.red = true;
@@ -2310,19 +2319,24 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                 else if (!xp.red || (xpp = xp.parent) == null)
                     return root;
                 if (xp == (xppl = xpp.left)) {
+                    // 情况1
                     if ((xppr = xpp.right) != null && xppr.red) {
                         xppr.red = false;
                         xp.red = false;
                         xpp.red = true;
                         x = xpp;
+                        // 继续for循环 维护红黑性质
                     }
                     else {
+                        // 情况2
                         if (x == xp.right) {
-                            root = rotateLeft(root, x = xp);
+                            root = rotateLeft(root, x = xp); // rotateLeft 使  x.parent = x.right
                             xpp = (xp = x.parent) == null ? null : xp.parent;
+                            // 此时 x 和 xp变量交换了 引用值，但层次结构不变 因为先x = xp上移了一层 后左旋下降了一层
                         }
+                        // 情况3 即 x == xp.left, 情况2经历左旋转化为情况3
                         if (xp != null) {
-                            xp.red = false;
+                            xp.red = false; // for会因此结束
                             if (xpp != null) {
                                 xpp.red = true;
                                 root = rotateRight(root, xpp);
@@ -2330,7 +2344,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                         }
                     }
                 }
-                else {
+                else { //情况1 2 3 对称的镜像情况
                     if (xppl != null && xppl.red) {
                         xppl.red = false;
                         xp.red = false;
