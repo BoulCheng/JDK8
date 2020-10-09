@@ -98,6 +98,11 @@ public class DriverManager {
      * jdbc.properties and then use the {@code ServiceLoader} mechanism
      */
     static {
+        //1 调用getConnection方法会触发DriverManager类初始化
+        //2 进而触发调用loadInitialDrivers方法
+        //3 spi加载Driver接口实现类  (ServiceLoader#PREFIX "META-INF/services/")
+        //4 Driver接口实现类会初始化 (e.g. com.mysql.cj.jdbc.Driver)
+        //5 Driver接口实现类初始化时调用DriverManager.registerDriver 把真正的数据库驱动(Driver)注册到 DriverManager#registeredDrivers
         loadInitialDrivers();
         println("JDBC DriverManager initialized");
     }
