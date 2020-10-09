@@ -187,6 +187,7 @@ public class LinkedHashMap<K,V>
      */
 
     /**
+     * 继承HashMap.Node
      * HashMap.Node subclass for normal LinkedHashMap entries.
      */
     static class Entry<K,V> extends HashMap.Node<K,V> {
@@ -252,9 +253,20 @@ public class LinkedHashMap<K,V>
         head = tail = null;
     }
 
+    /**
+     * 重写HashMap newNode 方法
+     * LinkedHashMap 的Node 运行时类型是 LinkedHashMap.Entry
+     * @param hash
+     * @param key
+     * @param value
+     * @param e
+     * @return
+     */
     Node<K,V> newNode(int hash, K key, V value, Node<K,V> e) {
         LinkedHashMap.Entry<K,V> p =
             new LinkedHashMap.Entry<K,V>(hash, key, value, e);
+        // 在Node新增时添加到LikedHashMap 的双向链表中
+        // 因此重新插入并不能改变顺序 (A key k is reinserted into a map m if m.put(k, v) is invoked when m.containsKey(k) would return true immediately prior to the invocation.)
         linkNodeLast(p);
         return p;
     }
