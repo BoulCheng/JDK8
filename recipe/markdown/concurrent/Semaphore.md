@@ -1,0 +1,4 @@
+- 一个计数信号量
+- acquire 消耗许可；如果许可不可获得则阻塞
+- release 归还释放许可使许可处于可获得状态
+- However, no actual permit objects are used; the Semaphore just keeps a count of the number available and acts accordingly.

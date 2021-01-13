@@ -1,5 +1,13 @@
 # LockSupport
 
+- core
+    - 用于创建锁和其他同步类的基本线程阻塞原语
+    - 方法park和unpark提供了阻塞和解除阻塞线程的有效方法
+    - 许可证不会累积，最多只有一个。不同于Semaphores
+    - 调用park方法，如果许可可获得则立即返回并消耗这个许可，如果许可不可获得则阻塞；park will return if the caller's thread was interrupted, and timeout versions are supported.
+    - 调用unpark方法归还许可，是许可可获得，但许可最多只有一个多次调用也只会有一个许可
+    - The park method may also return at any other time, for "no reason", so in general must be invoked within a loop that rechecks conditions upon return.In this sense park serves as an optimization of a "busy wait" that does not waste as much time spinning, but must be paired with an unpark to be effective.
+
 - Basic thread blocking primitives for creating locks and other synchronization classes.
 - (用于创建锁和其他同步类的基本线程阻塞原语。)
 
