@@ -26,6 +26,7 @@
 package java.util;
 
 import java.io.Serializable;
+import java.lang.Object;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -1028,6 +1029,7 @@ public class TreeMap<K,V>
 
     class Values extends AbstractCollection<V> {
         public Iterator<V> iterator() {
+            // according to the TreeMap's key-sort function 获取最小的元素
             return new ValueIterator(getFirstEntry());
         }
 
@@ -1209,6 +1211,7 @@ public class TreeMap<K,V>
                 throw new NoSuchElementException();
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
+            // 获取后继
             next = successor(e);
             lastReturned = e;
             return e;
@@ -2119,6 +2122,11 @@ public class TreeMap<K,V>
     }
 
     /**
+     *
+     * TreeSet 遍历 {@link #getFirstEntry() (java.lang.Object)} + {@link #successor(java.util.TreeMap.Entry)}
+     *
+     */
+    /**
      * Returns the first Entry in the TreeMap (according to the TreeMap's
      * key-sort function).  Returns null if the TreeMap is empty.
      */
@@ -2143,6 +2151,14 @@ public class TreeMap<K,V>
     }
 
     /**
+      * example
+      *
+      *          4
+      *      1
+      *          3
+      *      2
+     */
+    /**
      * Returns the successor of the specified Entry, or null if no such.
      */
     static <K,V> TreeMap.Entry<K,V> successor(Entry<K,V> t) {
@@ -2151,15 +2167,18 @@ public class TreeMap<K,V>
         else if (t.right != null) {
             Entry<K,V> p = t.right;
             while (p.left != null)
+                //获取右孩子的最小左孩子  一个节点的右子树的每个节点都大于该节点
                 p = p.left;
             return p;
         } else {
             Entry<K,V> p = t.parent;
             Entry<K,V> ch = t;
             while (p != null && ch == p.right) {
+                //如果是右孩子 向上遍历 直到其是左孩子然后返回该左孩子的父节点
                 ch = p;
                 p = p.parent;
             }
+            //如果是左孩子直接返回其父节点
             return p;
         }
     }
