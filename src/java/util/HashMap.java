@@ -2333,6 +2333,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                             root = rotateLeft(root, x = xp); // rotateLeft 使  x.parent = x.right
                             xpp = (xp = x.parent) == null ? null : xp.parent;
                             // 此时 x 和 xp变量交换了 引用值，但层次结构不变 因为先x = xp上移了一层 后左旋下降了一层
+
+                            // 情况2 转化为情况3继续进入了for循环
                         }
                         // 情况3 即 x == xp.left, 情况2经历左旋转化为情况3
                         if (xp != null) {
