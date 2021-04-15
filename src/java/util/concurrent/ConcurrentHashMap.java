@@ -579,6 +579,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * DEFAULT_CAPACITY.
      */
     /**
+     * 每个线程转移的最小元素个数，每个线程转移的元素个数
+     * 此值用作下限，以避免调整大小器(转移线程)遇到过多的内存争用
+     *
      * Minimum number of rebinnings per transfer step. Ranges are subdivided to allow multiple resizer threads.  This value serves as a lower bound to avoid resizers encountering excessive memory contention.  The value should be at least DEFAULT_CAPACITY.
      * 每个转移步骤的最少复归数，即每个线程转移的最小元素个数。总范围被细分以允许多个调整大小的线程。此值用作下限，以避免调整大小器(转移线程)遇到过多的内存争用
      */
@@ -700,6 +703,8 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * never be used in index calculations because of table bounds.
      */
     static final int spread(int h) {
+        // ConcurrentHashMap中经过扰乱函数处理之后，需要与HASH_BITS做与运算，HASH_BITS为0x7ffffff，即只有最高位为0，这样运算的结果使hashCode永远为正数。
+        // 在ConcurrentHashMap中，预定义了几个特殊节点的hashCode，如：MOVED、TREEBIN、RESERVED，它们的hashCode均定义为负值。因此，将普通节点的hashCode限定为正数，也就是为了防止与这些特殊节点的hashCode产生冲突
         return (h ^ (h >>> 16)) & HASH_BITS;
     }
 
@@ -768,8 +773,18 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * writes to be conservative.
      */
 
+    /**
+     * Unsafe 保证哈希表中元素更新后的多线程可见性
+     * 哈希表数组volatile修饰 保证扩容后多线程可见性
+     * @param tab
+     * @param i
+     * @param <K>
+     * @param <V>
+     * @return
+     */
     @SuppressWarnings("unchecked")
     static final <K,V> Node<K,V> tabAt(Node<K,V>[] tab, int i) {
+        // 虽然ConcurrentHashMap中的Node数组是由volatile修饰的，可以保证可见性，但是Node数组中元素是不具备可见性的。因此，在获取数据时通过Unsafe的方法直接到主存中拿，保证获取的数据是最新的
         return (Node<K,V>)U.getObjectVolatile(tab, ((long)i << ASHIFT) + ABASE);
     }
 
@@ -823,6 +838,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * The next table index (plus one) to split while resizing.
      */
     /**
+     * transferIndex 用于确定每个线程转移元素的范围 每个线程转移的索引范围为 [transferIndex - stride, transferIndex - 1]
      * 原表待转移元素的最大索引加1，也是待转移元素个数，和转移时每个线程转移的元素个数(stride)配合使用(如 MIN_TRANSFER_STRIDE)，转移时从原表最大索引元素开始转移，每个线程转移的索引范围为 [transferIndex - stride, transferIndex - 1]
      */
     private transient volatile int transferIndex;
@@ -1044,8 +1060,16 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
         return putVal(key, value, false);
     }
 
+    /**
+     * Java Map针对并发场景解决方案的演进方向可以归结为，从悲观锁到乐观锁，从粗粒度锁到细粒度锁
+     * HashTable(synchronized修饰整个方法) -> ConcurrentHashMap(jdk1.7-分段锁 每个segment下再挂载哈希桶数组)
+     * jdk1.8 -> cas + synchronized 只有在发生哈希冲突的情况下才使用synchronized锁定头节点，其实是比分段锁更细粒度的锁实现，只在特定场景下锁定其中一个哈希桶，降低锁的影响范围
+     *
+     * 分段锁的优势在于保证在操作不同段 map 的时候可以并发执行，操作同段 map 的时候，进行锁的竞争和等待。这相对于直接对整个map同步synchronized是有优势的, 当某个段很大时，分段锁的性能会下降
+     */
     /** Implementation for put and putIfAbsent */
     final V putVal(K key, V value, boolean onlyIfAbsent) {
+        // key 不能为空
         if (key == null || value == null) throw new NullPointerException();
         int hash = spread(key.hashCode());
         int binCount = 0;
@@ -1054,14 +1078,19 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             if (tab == null || (n = tab.length) == 0)
                 tab = initTable();
             else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) {
+                // cas
                 if (casTabAt(tab, i, null,
                              new Node<K,V>(hash, key, value, null)))
                     break;                   // no lock when adding to empty bin
             }
             else if ((fh = f.hash) == MOVED)
+                // 发现 正在进行扩容， 当前线程协助一起多线程扩容
                 tab = helpTransfer(tab, f);
             else {
+                // 发生哈希冲突
                 V oldVal = null;
+                // 使用synchronized锁定哈希桶数组中第i个位置中的第一个元素f 头节点
+                // 只有在发生哈希冲突的情况下才使用synchronized锁定头节点，其实是比分段锁更细粒度的锁实现，只在特定场景下锁定其中一个哈希桶，降低锁的影响范围
                 synchronized (f) {
                     //进入synchronized后再检查一遍f
                     if (tabAt(tab, i) == f) {
@@ -1165,7 +1194,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 V oldVal = null;
                 boolean validated = false;
                 synchronized (f) {
-                    if (tabAt(tab, i) == f) {
+                    if (tabAt(tab, i) == f) { //remove put 扩容 并发操作 需要再次检查
                         if (fh >= 0) {
                             validated = true;
                             for (Node<K,V> e = f, pred = null;;) {
@@ -2434,8 +2463,10 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
         if ((stride = (NCPU > 1) ? (n >>> 3) / NCPU : n) < MIN_TRANSFER_STRIDE)
             stride = MIN_TRANSFER_STRIDE; // subdivide range
         if (nextTab == null) {            // initiating
+            // 第一个进行扩容的线程
             try {
                 //扩容2倍
+                // 根据当前数组长度n，新建一个两倍长度的数组nextTable
                 @SuppressWarnings("unchecked")
                 Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n << 1];
                 nextTab = nt;
@@ -2446,7 +2477,10 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             nextTable = nextTab;
             transferIndex = n;
         }
+        // nextTab != null 即是其他线程 helpTransfer 协助一起扩容， 多线程扩容
+
         int nextn = nextTab.length;
+        // 初始化ForwardingNode节点 hash 为 MOVED ，其中保存了新数组nextTable的引用，在处理完每个槽位的节点之后当做占位节点，表示该槽位已经处理过了；
         ForwardingNode<K,V> fwd = new ForwardingNode<K,V>(nextTab);
         boolean advance = true;
         boolean finishing = false; // to ensure sweep before committing nextTab
@@ -2455,6 +2489,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             while (advance) {
                 int nextIndex, nextBound;
                 if (--i >= bound || finishing)
+                    // 继续迁移已经确定的桶范围的其他桶
                     advance = false;
                 else if ((nextIndex = transferIndex) <= 0) {
                     i = -1;
@@ -2464,6 +2499,10 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                          (this, TRANSFERINDEX, nextIndex,
                           nextBound = (nextIndex > stride ?
                                        nextIndex - stride : 0))) {
+                    // 确定当前线程要迁移的桶的范围，如果上一桶范围迁移完会重新确定下一桶范围
+                    // 每一次确定的桶范围(哈希表数组索引范围) [transferIndex - stride, transferIndex - 1] 且从 transferIndex - 1 开始反向遍历
+                    // cas + 自旋更新 transferIndex 变量值
+                    // i指当前处理的槽位序号(初始值为范围右端)，bound指需要处理的槽位边界(范围左端)
                     bound = nextBound;
                     i = nextIndex - 1;
                     advance = false;
@@ -2485,17 +2524,21 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 }
             }
             else if ((f = tabAt(tab, i)) == null)
+                // 在当前假设条件下，槽位中没有节点，则通过CAS插入在第二步中初始化的ForwardingNode节点，用于告诉其它线程该槽位已经处理过了
                 advance = casTabAt(tab, i, null, fwd);
             else if ((fh = f.hash) == MOVED)
+                // 如果槽位已经被线程A处理了，那么线程B处理到这个节点时，取到该节点的hash值应该为MOVED，值为-1，则直接跳过，继续处理下一个槽位的节点
                 advance = true; // already processed
             else {
-                synchronized (f) {
+                synchronized (f) { // 上锁 防止该桶链表被并发更新
                     if (tabAt(tab, i) == f) {
                         Node<K,V> ln, hn;
                         if (fh >= 0) {
                             int runBit = fh & n;
                             Node<K,V> lastRun = f;
                             for (Node<K,V> p = f.next; p != null; p = p.next) {
+                                // 找出最后一段节点hashcode & n 不变的子链表，该子链表是原哈希表该桶位置链表由扩容产生的高位链表或低位链表的子链表 这样最后这一段子链表就不用遍历，不用重新创建新结点
+                                // 高低链表 保持 原哈希表该桶位置链表 的顺序性
                                 int b = p.hash & n;
                                 if (b != runBit) {
                                     runBit = b;
@@ -2517,8 +2560,11 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                                 else
                                     hn = new Node<K,V>(ph, pk, pv, hn);
                             }
+                            // 低位链表
                             setTabAt(nextTab, i, ln);
+                            // 高位链表
                             setTabAt(nextTab, i + n, hn);
+                            // 标示已经被转移
                             setTabAt(tab, i, fwd);
                             advance = true;
                         }
@@ -6357,6 +6403,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
 
     static {
         try {
+            // Java语言是安全的，所有操作都基于JVM，在安全可控的范围内进行。然而，Unsafe这个类会打破这个边界，使Java拥有C的能力，可以操作内存地址
             U = sun.misc.Unsafe.getUnsafe();
             Class<?> k = ConcurrentHashMap.class;
             SIZECTL = U.objectFieldOffset
