@@ -388,8 +388,11 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * never be used in index calculations because of table bounds.
      */
     static final int hash(Object key) {
+        // 并没有直接使用Object的native方法返回的hashCode作为最终的哈希值，而是进行了二次加工
+        // 使用key对应的hashCode与其hashCode右移16位的结果进行异或操作。此处，将低16位与高16位进行异或的操作称之为扰动函数，目的是将高位的特征融入到低位之中，降低哈希冲突的概率
         int h;
         return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+        // key可以为null
     }
 
     /**
@@ -429,17 +432,28 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * Returns a power of two size for the given target capacity.
      */
     /**
-     * 找到大于等于cap的最小的2的幂
+     * 找到大于等于给定值的最小2的整数次幂
+     * 因此，计算的意义在于找到大于等于cap的最小2的整数次幂。
+     *
+     * 整个过程是找到cap对应二进制中最高位的1，然后每次以2倍的步长（依次移位1、2、4、8、16）复制最高位1到后面的所有低位，把最高位1后面的所有位全部置为1，最后进行+1，即完成了进位
+     *
+     *
+     *
+     * 增加存储空间利用率，同时也减少了哈希碰撞的几率
+     * 为了提高计算与存储效率，使每个元素对应hash值能够准确落入哈希桶数组给定的范围区间内。确定数组下标采用的算法是 hash & (n - 1)，n即为哈希桶数组的大小
+     * 举个反例，当n=7，n-1对应的二进制为0110，任何与0110进行&运算会落入到第0、6、4、2个哈希桶，而不是[0,6]的区间范围内，少了1、3、5三个哈希桶，这导致存储空间利用率只有不到60%，同时也增加了哈希碰撞的几率
      * @param cap
-     * @return
+     * @return n , n-1二进制与任何值进行&运算都会使该值映射到指定区间[0, n-1]
      */
     static final int tableSizeFor(int cap) {
+        // -1 保证是大于等于给定值的最小2的整数次幂； 反例 cap=1000 不减一 结果是 10000
         int n = cap - 1;
+        // 假设n 0001 0000 0000 0000 0000 0000 0000 0000
         n |= n >>> 1;
         n |= n >>> 2;
         n |= n >>> 4;
         n |= n >>> 8;
-        n |= n >>> 16;
+        n |= n >>> 16; // n 0001 1111 1111 1111 1111 1111 1111 1111
         return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
     }
 
@@ -694,11 +708,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         if ((tab = table) == null || (n = tab.length) == 0)
             n = (tab = resize()).length;
         if ((p = tab[i = (n - 1) & hash]) == null)
+            // (n - 1) & hash 将不同的输入值的哈希运算得到的哈希值映射到指定的区间范围内
+            //如果key重写了equals() 但没有正确重写hashcode() 那么根据tab.lenght 和 hash值计算出的哈希槽大概率不是期望的，会导致newNode，即判断为两个key不相等
             tab[i] = newNode(hash, key, value, null);
         else {
             Node<K,V> e; K k;
             if (p.hash == hash &&
                 ((k = p.key) == key || (key != null && key.equals(k))))
+                //如果key重写了equals() 但没有正确重写hashcode() hash值大概率不是期望的 会导致两个key判断为不相等
                 e = p;
             else if (p instanceof TreeNode)
                 e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
@@ -732,6 +749,43 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     /**
+     * vs 1.7 既省去了重新计算hash值的时间，而且同时，由于n-1的mask范围在高位新增的1bit对应key的hash的位是0还是1可以认为是随机的，因此resize的过程，均匀的把之前的冲突的节点分散到新的bucket
+     * 1.7 旧链表迁移新链表的时候，如果在新表的数组索引位置相同，则链表元素会倒置
+     *
+     * void transfer(Entry[] newTable) {
+     *     Entry[] src = table;
+     *     int newCapacity = newTable.length;
+     *     for (int j = 0; j < src.length; j++) {
+     *         Entry e = src[j];
+     *         if (e != null) {
+     *             src[j] = null;
+     *             do {
+     *                 Entry next = e.next;
+     *                 int i = indexFor(e.hash, newCapacity);
+     *                 // 死循环的产生是因为新链表的顺序跟旧的链表是完全相反的
+     *                 // 只要保证建新链时还是按照原来的顺序的话就不会产生循环 JDK8保证了链表的顺序和之前一样，这样就不会产生循环引用
+     *                 e.next = newTable[i];
+     *                 newTable[i] = e;
+     *                 e = next;
+     *             } while (e != null);
+     *         }
+     *     }
+     * }
+     *
+     *
+     *
+     * 假设 table 某下标 i 处的链表如下
+     * i =>  A => B => C
+     * 单线程正常情况假设 resize 后会变为：
+     * i => B => A
+     * ...
+     * j => C
+     *
+     * 并发resize
+     * i => A <=> B //当执行 get 时，当key 正好被分到这个 table[i] 上时，遍历链表就会产生死循环
+     *
+     */
+    /**
      * Initializes or doubles table size.  If null, allocates in
      * accord with initial capacity target held in field threshold.
      * Otherwise, because we are using power-of-two expansion, the
@@ -762,6 +816,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
         }
         if (newThr == 0) {
+            // TODO: 2020/7/23  
             float ft = (float)newCap * loadFactor;
             newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
                       (int)ft : Integer.MAX_VALUE);
@@ -770,6 +825,20 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         @SuppressWarnings({"rawtypes","unchecked"})
             Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
         table = newTab;
+        /**
+         * 元素在重新计算hash之后，因为n变为2倍，那么n-1的mask范围在高位多1bit
+         * 16  1111(n-1 15)
+         * 32 11111(n-1 31)
+         *
+         * 元素在重新计算hash之后，因为n变为2倍，那么n-1的mask范围在高位多1bit(如11111)，原来同一个哈希桶位置的链表中的元素 与扩容后的n-1 mask 进行&运算 要么在原来的哈希桶位置要么在一个新的哈希桶位置
+         * 新的哈希桶位置 = 原来的哈希桶位置 + 原来的哈希表数组长度n
+         * 是否在新的哈希桶位置 可以通过与原来的哈希表数组长度n的mask(如10000) 进行&运算结果是否为0判断
+         * 同时，由于新增的高位1bit对应key的hash的位是0还是1可以认为是随机的，因此resize的过程，均匀的把之前的冲突的节点分散到新的bucket
+         * 也就是把原来冲突的节点分成了loHead-loTail 和 hiHead-hiTail 两个不同的部分 分别放入不同的哈希桶位置
+         *
+         *
+         */
+
         if (oldTab != null) {
             for (int j = 0; j < oldCap; ++j) {
                 Node<K,V> e;
@@ -780,12 +849,25 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     else if (e instanceof TreeNode)
                         ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
                     else { // preserve order
+                        /**
+                         * 若存在冲突元素，则采用高低位链表进行处理。
+                         * 以容量为8的HashMap为例，原有容量8扩容至16，将[0, 7]称为低位，[8, 15]称为高位，低位对应loHead、loTail，高位对应hiHead、hiTail
+                         * 通过e.hash & oldCap 来判断取模后是落在高位还是低位
+                         *
+                         * 举个例子：
+                         * 假设当前元素hashCode为0001（忽略高位），其运算结果等于0，说明扩容后结果不变，取模后还是落在低位[0, 7]，即0001 & 1000 = 0000，还是原位置，再用低位链表将这类的元素链接起来。
+                         * 假设当前元素的hashCode为1001， 其运算结果不为0，即1001 & 1000 = 1000 ，扩容后会落在高位，新的位置刚好是旧数组索引（1） + 旧数据长度（8） = 9，再用高位链表将这些元素链接起来。
+                         * 最后，将高低位链表的头节点分别放在扩容后数组newTab的指定位置上，即完成了扩容操作。
+                         * 这种实现降低了对共享资源newTab的访问频次，先组织冲突节点，最后再放入newTab的指定位置。避免了JDK1.8之前每遍历一个元素就放入newTab中，再加上在新表的数组索引位置相同，则链表元素会倒置 从而导致并发扩容下的死链问题
+                         */
                         Node<K,V> loHead = null, loTail = null;
                         Node<K,V> hiHead = null, hiTail = null;
                         Node<K,V> next;
                         do {
                             next = e.next;
-                            if ((e.hash & oldCap) == 0) {
+                            if ((e.hash & oldCap) == 0) {// 以oldCap为16为例 oldCap是 10000
+                                // 如果等于0则表示(元素在重新计算hash之后，因为n变为2倍，那么n-1的mask范围在高位多1bit)这高位多出的1bit对应e.hash的位为0
+                                // 那么e.hash & 1111 结果等于 那么e.hash & 11111 的结果 直接放在原索引对应的哈希桶的位置
                                 if (loTail == null)
                                     loHead = e;
                                 else
@@ -806,7 +888,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                         }
                         if (hiTail != null) {
                             hiTail.next = null;
-                            newTab[j + oldCap] = hiHead;
+                            newTab[j + oldCap] = ehiHad;
                         }
                     }
                 }

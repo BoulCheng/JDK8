@@ -1,7 +1,7 @@
 # HashMap 
 - 链表的节点数大于等于8 并且 哈希表数组长度大于等于64 时链表会转化为红黑树, 
     - If the current tree appears to have too few nodes, the bin is converted back to a plain bin. (The test triggers somewhere between 2 and 6 nodes, depending on tree structure).
-- 当键值对总数 > 数组长度 * 0.75，进行2倍扩容，注意不会缩容。
+- 当键值对总数(size()) > (initialCapacity的最小的2的幂(数组length) * loadFactor)则进行2倍扩容；(当键值对总数 > 数组长度 * 0.75，进行2倍扩容)
  
 - Hash table based implementation of the Map interface. (基于哈希表实现的map接口)
 
@@ -49,4 +49,18 @@
         ```
         
         
-- 
+- 哈希冲突如何解决呢？
+    - 主要从两个方面考虑，
+        一 方面是避免冲突，
+            - 通过扰动函数来增加hashCode的随机性，避免冲突
+        - 另一方面是在冲突时合理地解决冲突，尽可能提高查询效率
+            - 拉链表
+                - 同一key的判断逻辑 先判断hash值是否相同，再比较key的地址或值是否相同
+                - 在JDK1.8之前，HashMap在并发场景下扩容时存在一个bug，形成死链，导致get该位置元素的时候，会死循环，使CPU利用率高居不下
+                - JDK1.8之中，引入了高低位链表（双端链表）
+                    -如 原有容量8扩容至16，将[0, 7]称为低位，[8, 15]称为高位，低位对应loHead、loTail，高位对应hiHead、hiTail
+            - 红黑树
+                - 使查询具备O(logn)的性能。
+                - vs AVL 
+                    - 两者核心的区别是AVL树追求高度平衡(在AVL树中，任一节点对应的两棵子树的最大高度差为1，因此它也被称为高度平衡树)，在插入、删除节点时，成本要高于红黑树，但也因此拥有了更好的查询性能，适用于读多写少的场景。然而，对于HashMap而言，读写操作其实难分伯仲，因此选择红黑树也算是在读写性能上的一种折中
+    
