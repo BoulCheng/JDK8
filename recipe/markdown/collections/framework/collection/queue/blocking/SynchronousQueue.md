@@ -1,4 +1,5 @@
 # SynchronousQueue
+- 其中每个插入操作都必须等待另一个线程对应的取出操作，反之亦然。
 
 - A synchronous queue does not have any internal capacity, not even a capacity of one.
 

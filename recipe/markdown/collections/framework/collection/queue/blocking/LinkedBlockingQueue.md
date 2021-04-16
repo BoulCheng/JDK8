@@ -33,7 +33,7 @@
     ```
     
 - character
-    - 非公平锁
+    - ReentrantLock 非公平锁
     - put、take独立一个ReentrantLock
     - 大小无界
     - 高吞吐量

@@ -1,5 +1,7 @@
 # DelayQueue
 
+- 通过getDelay返回小于等于0判断为过期 过期的元素可以取出 否则等待有过期的元素
+- 内部采用优先队列 PriorityQueue 存储元素，Delayed 接口继承了Comparable接口，插入元素通过Comparable#compareTo调用Delayed#getDelay判断不同元素过期的快慢再放入优先级队列
 - An unbounded blocking queue of Delayed elements, in which an element can only be taken when its delay has expired.
 
 - Expiration occurs when an element's getDelay(TimeUnit.NANOSECONDS) method returns a value less than or equal to zero.

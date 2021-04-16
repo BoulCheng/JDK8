@@ -1,4 +1,6 @@
 # BlockingQueue
+- 并发安全
+- 且额外提供了阻塞方法 put take
 
 - BlockingQueue implementations are thread-safe
 

@@ -1,5 +1,6 @@
 # PriorityBlockingQueue
-
+- 无界的，插入不会阻塞
+    - Inserts the specified element into this priority queue. As the queue is unbounded, this method will never block.
 - An unbounded blocking queue that uses the same ordering rules as class PriorityQueue and supplies blocking retrieval operations
 
 - Operations on this class make no guarantees about the ordering of elements with equal priority.(该类上的操作不能保证具有同等优先级的元素的顺序。)
