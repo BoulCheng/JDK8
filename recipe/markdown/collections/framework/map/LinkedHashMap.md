@@ -96,6 +96,7 @@
 
     ```
     - iterator 遍历从head到tail, accessOrder会把访问的节点移动到tail, 所以遍历的顺序是从离当前时刻最远访问节点到最近的访问节点
+- insertion-order
 
 - The removeEldestEntry(Map.Entry) method may be overridden to impose a policy for removing stale mappings automatically when new mappings are added to the map.
     - 继承LinkedHashMap 并重写removeEldestEntry返回true，则会在新增的时候删除双向链表的head节点，(即 EldestEntry)

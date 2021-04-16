@@ -2,9 +2,13 @@
 - 链表的节点数大于等于8 并且 哈希表数组长度大于等于64 时链表会转化为红黑树, 
     - If the current tree appears to have too few nodes, the bin is converted back to a plain bin. (The test triggers somewhere between 2 and 6 nodes, depending on tree structure).
 - 当键值对总数(size()) > (initialCapacity的最小的2的幂(数组length) * loadFactor)则进行2倍扩容；(当键值对总数 > 数组长度 * 0.75，进行2倍扩容)
- 
+- loadFactor 默认0.75 可以理解为平均每个桶装满0.75个元素就进行扩容 
 - Hash table based implementation of the Map interface. (基于哈希表实现的map接口)
-
+- 不会缩容
+    - 在remove操作中做缩容操作，remove操作居然有可能是O(n)的复杂度
+    - 合适的时候通知单独的线程来做缩容操作,HashMap不是线程安全的
+    - 为了减少 hashmap 自动扩容次数，鼓励在创建 hashmap 对象时估算实际存储的元素数量指定初始容量
+    - Java在大部分情况下都是用空间换时间的，缩容这种不符合Java的哲学
 - permits null values and the null key.
     ```
     static final int hash(Object key) {
