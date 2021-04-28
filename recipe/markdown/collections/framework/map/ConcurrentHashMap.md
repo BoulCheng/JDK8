@@ -1,5 +1,66 @@
 # ConcurrentHashMap
 
+- 并发安全的保证
+    - put
+        - 可以保证hash值相同的key在第一次put时的并发安全，即假如key1.hash = key2.hash 那么key1、key2并发put不会出现key1覆盖key2 或者 key2覆盖key1，覆盖是指key覆盖不是value覆盖
+        - 当调用ConcurrentHashMap#putIfAbsent 可以保证同一个key在第一次put时的并发安全，即初始的value不会发生相互覆盖的情况，
+        - 但如果不是 putIfAbsent ，不能保证同一个key在第一次put时的并发安全，即初始的value可能会发生相互覆盖的情况
+        - hashmap##put(Object, Object) 、ConcurrentHashMap##put(Object, Object) 都可以更新同一个key的value
+        - 对比关键源码
+            - hashmap
+                ```
+              // hash值相同的key在第一次put时的可能会产生key相互覆盖
+                        if ((p = tab[i = (n - 1) & hash]) == null)
+                            tab[i] = newNode(hash, key, value, null);
+                ```
+            - ConcurrentHashMap
+                ```
+              // cas 更新， hash值相同的key在第一次put时的不会产生key相互覆盖
+                            else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) {
+                                if (casTabAt(tab, i, null,
+                                             new Node<K,V>(hash, key, value, null)))
+                                    break;                   // no lock when adding to empty bin
+                            }
+                ```
+                ```
+                                synchronized (f) {
+                                    if (tabAt(tab, i) == f) {
+                                        if (fh >= 0) {
+                                            binCount = 1;
+                                            for (Node<K,V> e = f;; ++binCount) {
+                                                K ek;
+                                                if (e.hash == hash &&
+                                                    ((ek = e.key) == key ||
+                                                     (ek != null && key.equals(ek)))) {
+                                                    oldVal = e.val;
+              // 如果是 putIfAbsent，产生并发更新冲突是，cas 更新失败，继续while循环，执行put，执行到这里并不会更新
+              // 但如果不是 putIfAbsent ，不能保证同一个key在第一次put时的并发安全，即初始的value可能会发生相互覆盖的情况
+              
+                                                    if (!onlyIfAbsent)
+                                                        e.val = value;
+                                                    break;
+                                                }
+                                                Node<K,V> pred = e;
+                                                if ((e = e.next) == null) {
+                                                    pred.next = new Node<K,V>(hash, key,
+                                                                              value, null);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        else if (f instanceof TreeBin) {
+                                            Node<K,V> p;
+                                            binCount = 2;
+                                            if ((p = ((TreeBin<K,V>)f).putTreeVal(hash, key,
+                                                                           value)) != null) {
+                                                oldVal = p.val;
+                                                if (!onlyIfAbsent)
+                                                    p.val = value;
+                                            }
+                                        }
+                                    }
+                                }
+                ```
 - 扩容
 
 - 本身已经保证键值对总数(size()) 不超过 initialCapacity 的情况且正常情况下不会进行扩容 (任意loadFactor)
