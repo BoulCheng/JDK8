@@ -4,6 +4,7 @@
     - put
         - 可以保证hash值相同的key在第一次put时的并发安全，即假如key1.hash = key2.hash 那么key1、key2并发put不会出现key1覆盖key2 或者 key2覆盖key1，覆盖是指key覆盖不是value覆盖
         - 当调用ConcurrentHashMap#putIfAbsent 可以保证同一个key在第一次put时的并发安全，即初始的value不会发生相互覆盖的情况，
+            - 当然 hashmap + synchronized 双重检查 也可以保证这种场景的并发安全，但ConcurrentHashMap是cas乐观操作相比synchronized悲观操作更优
         - 但如果不是 putIfAbsent ，不能保证同一个key在第一次put时的并发安全，即初始的value可能会发生相互覆盖的情况
         - hashmap##put(Object, Object) 、ConcurrentHashMap##put(Object, Object) 都可以更新同一个key的value
         - 对比关键源码
