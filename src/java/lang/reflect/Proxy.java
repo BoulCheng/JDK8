@@ -752,7 +752,7 @@ public class Proxy implements java.io.Serializable {
         /*
          * Look up or generate the designated proxy class.
          */
-        //proxy-1 查到或生成指定的代理类
+        //proxy-1 查到或生成指定接口的代理类
         Class<?> cl = getProxyClass0(loader, intfs);
 
         /*
@@ -773,6 +773,7 @@ public class Proxy implements java.io.Serializable {
                     }
                 });
             }
+            // 根据 InvocationHandler 构造参数实例化一个代理对象
             return cons.newInstance(new Object[]{h});
         } catch (IllegalAccessException|InstantiationException e) {
             throw new InternalError(e.toString(), e);

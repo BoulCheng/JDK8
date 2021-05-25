@@ -261,6 +261,7 @@ final class WeakCache<K, P, V> {
             // the only path to reach here is with non-null value
             assert value != null;
 
+            // 生的代理类 Class 对象缓存使用了WeakReference引用 以避免内存泄漏
             // wrap value with CacheValue (WeakReference)
             CacheValue<V> cacheValue = new CacheValue<>(value);
 
@@ -269,6 +270,7 @@ final class WeakCache<K, P, V> {
 
             // try replacing us with CacheValue (this should always succeed)
             /**
+             * 生的代理类 Class 对象 放入缓存
              * {@link #map} 中value Supplier 第一次放的是Factory实例 后面通过Factory#get方法生成CacheValue实例后会更新为该CacheValue实例
              */
             if (!valuesMap.replace(subKey, this, cacheValue)) {
