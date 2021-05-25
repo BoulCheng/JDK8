@@ -82,6 +82,7 @@ public class ThreadLocal<T> {
      * are used by the same threads, while remaining well-behaved in
      * less common cases.
      */
+    // 每个 ThreadLocal 对象 一个固定值
     private final int threadLocalHashCode = nextHashCode();
 
     /**
@@ -160,6 +161,7 @@ public class ThreadLocal<T> {
         Thread t = Thread.currentThread();
         ThreadLocalMap map = getMap(t);
         if (map != null) {
+            // 开放地址法-线性探针
             ThreadLocalMap.Entry e = map.getEntry(this);
             if (e != null) {
                 @SuppressWarnings("unchecked")
@@ -310,8 +312,10 @@ public class ThreadLocal<T> {
             Object value;
 
             Entry(ThreadLocal<?> k, Object v) {
-                super(k);
-                value = v;
+                // Key作为弱引用，Value还是强引用。如果我们在使用完ThreadLocal以后，没有对Entity进行移除，会引发内存泄漏问题
+                // 且Entry 没有注册 queue
+                super(k); //弱引用 不影响gc会回收
+                value = v; //只有访问该线程的ThreadLocalMap时 如果key被gc回收后会清理value
             }
         }
 
@@ -347,6 +351,7 @@ public class ThreadLocal<T> {
          * Increment i modulo len.
          */
         private static int nextIndex(int i, int len) {
+            //解决哈希冲突-开放地址法-线性探针
             return ((i + 1 < len) ? i + 1 : 0);
         }
 
@@ -413,7 +418,7 @@ public class ThreadLocal<T> {
         private Entry getEntry(ThreadLocal<?> key) {
             int i = key.threadLocalHashCode & (table.length - 1);
             Entry e = table[i];
-            if (e != null && e.get() == key)
+            if (e != null && e.get() == key) //通过等值
                 return e;
             else
                 return getEntryAfterMiss(key, i, e);
@@ -437,8 +442,10 @@ public class ThreadLocal<T> {
                 if (k == key)
                     return e;
                 if (k == null)
+                    // 当key被gc回收 清理value
                     expungeStaleEntry(i);
                 else
+                    // 开放地址法-线性探针 查找哈希表
                     i = nextIndex(i, len);
                 e = tab[i];
             }
@@ -464,7 +471,7 @@ public class ThreadLocal<T> {
 
             for (Entry e = tab[i];
                  e != null;
-                 e = tab[i = nextIndex(i, len)]) {
+                 e = tab[i = nextIndex(i, len)]) { //解决哈希冲突-开放地址法-线性探针
                 ThreadLocal<?> k = e.get();
 
                 if (k == key) {
@@ -495,6 +502,7 @@ public class ThreadLocal<T> {
                  e != null;
                  e = tab[i = nextIndex(i, len)]) {
                 if (e.get() == key) {
+                    // 通过remove清理 key value
                     e.clear();
                     expungeStaleEntry(i);
                     return;
@@ -591,7 +599,7 @@ public class ThreadLocal<T> {
             int len = tab.length;
 
             // expunge entry at staleSlot
-            tab[staleSlot].value = null;
+            tab[staleSlot].value = null; // 当key被gc回收 清理value
             tab[staleSlot] = null;
             size--;
 
@@ -603,7 +611,7 @@ public class ThreadLocal<T> {
                  i = nextIndex(i, len)) {
                 ThreadLocal<?> k = e.get();
                 if (k == null) {
-                    e.value = null;
+                    e.value = null;// 当key被gc回收 清理value
                     tab[i] = null;
                     size--;
                 } else {
