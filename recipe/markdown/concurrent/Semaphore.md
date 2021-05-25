@@ -1,4 +1,8 @@
 - 一个计数信号量
-- acquire 消耗许可；如果许可不可获得则阻塞
+- 用来控制可同时并发的线程数，每次线程执行操作时先通过acquire方法获得许可，执行完毕再通过release方法释放许可
+- acquire 消耗许可；如果许可不可获得则阻塞，直到其它线程释放许可
 - release 归还释放许可使许可处于可获得状态
 - However, no actual permit objects are used; the Semaphore just keeps a count of the number available and acts accordingly.
+- vs 线程池
+    - 信号量 限制可同时执行的线程数量，对线程做限流
+    - 线程池 控制实际工作的线程数量

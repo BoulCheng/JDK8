@@ -141,3 +141,30 @@
     
     
 
+### 
+- JUC中一般是用一个子类继承自Lock，然后在子类中定义一个内部类来实现AQS的继承跟使用。
+
+- CLH 锁也是一种基于链表的可扩展、高性能、公平的自旋锁，申请线程只在本地变量上自旋，它不断轮询前驱的状态，如果发现前驱释放了锁就结束自旋
+```
+            for (;;) {
+                final Node p = node.predecessor();
+                if (p == head && tryAcquire(arg)) {
+                    setHead(node);
+                    p.next = null; // help GC
+                    failed = false;
+                    return interrupted;
+                }
+                if (shouldParkAfterFailedAcquire(p, node) &&
+                    parkAndCheckInterrupt())
+                    interrupted = true;
+            }
+```
+- CLH 队列由Node对象组成，其中Node是AQS中的内部类。
+    - Node#waitStatus
+        - SIGNAL = -1,表示后继结点在等待当前结点唤醒。后继结点入队时，会将前继结点的状态更新为 SIGNAL。
+        - CONDITION = -2, 表示结点等待在 Condition 上，当其他线程调用了 Condition 的 signal() 方法后，CONDITION状态的结点将从等待队列转移到同步队列中，等待获取同步锁。Condition#await返回前需要先获取到锁(AQS#acquireQueued)
+        - PROPAGATE = -3, 共享模式下，前继结点不仅会唤醒其后继结点，同时也可能会唤醒后继的后继结点
+
+- AQS内部维护着一个FIFO的队列，即CLH队列，提供先来先服务的公平性。AQS的同步机制就是依靠CLH队列实现的。CLH队列是FIFO的双端双向链表队列(方便尾部节点插入)。线程通过AQS获取锁失败，就会将线程封装成一个Node节点，通过CAS原子操作插入队列尾。当有线程释放锁时，会尝试让队头的next节点占用锁，个人理解AQS具有如下几个特点：                       
+- 在AQS队列中第二个才是最先排队的线程  
+- 不到万不得已不要轻易park线程，很耗时的！所以排队的头线程会自旋的尝试几次(nofair-2次 fair-1次)获取锁。
