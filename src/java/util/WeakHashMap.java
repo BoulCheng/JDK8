@@ -175,6 +175,9 @@ public class WeakHashMap<K,V>
     private final float loadFactor;
 
     /**
+     * 当key失效的时候gc会自动把对应的Entry添加到这个引用队列中
+     */
+    /**
      * Reference queue for cleared WeakEntries
      */
     private final ReferenceQueue<Object> queue = new ReferenceQueue<>();
@@ -311,6 +314,9 @@ public class WeakHashMap<K,V>
         return h & (length-1);
     }
 
+    /**
+     * 移除Entry的同时把value也一并置为null
+     */
     /**
      * Expunges stale entries from the table.
      */
