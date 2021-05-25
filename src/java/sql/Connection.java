@@ -29,6 +29,14 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 
 /**
+ * A Connection object's database is able to provide information describing its tables, its supported SQL grammar, its stored procedures, the capabilities of this connection, and so on. This information is obtained with the getMetaData method.
+ *
+ * When configuring a Connection, JDBC applications should use the appropriate Connection method such as setAutoCommit or setTransactionIsolation
+ *
+ * By default a Connection object is in auto-commit mode, which means that it automatically commits changes after executing each statement. If auto-commit mode has been disabled, the method commit must be called explicitly in order to commit changes; otherwise, database changes will not be saved.
+ */
+
+/**
  * <P>A connection (session) with a specific
  * database. SQL statements are executed and results are returned
  * within the context of a connection.
