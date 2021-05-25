@@ -317,6 +317,10 @@ public abstract class ClassLoader {
     }
 
     /**
+     * 自定义的类加载器的父类加载器是系统类加载器SystemClassLoader，系统类加载器SystemClassLoader默认是 AppClassLoader
+     * 可以通过系统参数 java.system.class.loader 指定系统类加载器SystemClassLoader全限定类名，且设定它的父类是 AppClassLoader
+     */
+    /**
      * Creates a new class loader using the <tt>ClassLoader</tt> returned by
      * the method {@link #getSystemClassLoader()
      * <tt>getSystemClassLoader()</tt>} as the parent class loader.
@@ -338,6 +342,10 @@ public abstract class ClassLoader {
     // -- Class --
 
     /**
+     * 执行了类加载的加载阶段把类的二进制字节流加载到JVM
+     * 但没有执行类加载的连接阶段
+     */
+    /**
      * Loads the class with the specified <a href="#name">binary name</a>.
      * This method searches for classes in the same manner as the {@link
      * #loadClass(String, boolean)} method.  It is invoked by the Java virtual
@@ -357,6 +365,12 @@ public abstract class ClassLoader {
         return loadClass(name, false);
     }
 
+    /**
+     * 双亲委派 必须通过该方法加载类
+     * 如果需要破坏双亲委派机制，
+     *  自定义类加载重写loadClass方法破坏原来{@link #loadClass(String, boolean)}方法的双亲委派机制，再调用重写后loadClass方法加载类
+     *  或者自定义类加载器可以重写{@link #findClass(String)}然后直接调用{@link #findClass(String)加载类
+     */
     /**
      * Loads the class with the specified <a href="#name">binary name</a>.  The
      * default implementation of this method searches for classes in the
@@ -392,6 +406,7 @@ public abstract class ClassLoader {
      *
      * @param  resolve
      *         If <tt>true</tt> then resolve the class
+     *         是否执行类加载的连接阶段
      *
      * @return  The resulting <tt>Class</tt> object
      *
@@ -403,6 +418,7 @@ public abstract class ClassLoader {
     {
         synchronized (getClassLoadingLock(name)) {
             // First, check if the class has already been loaded
+            //按类加载器层级自底向上依次检查类是否已经加载
             Class<?> c = findLoadedClass(name);
             if (c == null) {
                 long t0 = System.nanoTime();
@@ -410,6 +426,8 @@ public abstract class ClassLoader {
                     if (parent != null) {
                         c = parent.loadClass(name, false);
                     } else {
+                        // 如果 parent 为 null; 则通过bootstrap class loader 加载类; Returns a class loaded by the bootstrap class loader
+                        // sun.misc.Launcher#ExtClassLoader父类为null， 它的父类加载器是 bootstrap class loader
                         c = findBootstrapClassOrNull(name);
                     }
                 } catch (ClassNotFoundException e) {
@@ -421,6 +439,7 @@ public abstract class ClassLoader {
                     // If still not found, then invoke findClass in order
                     // to find the class.
                     long t1 = System.nanoTime();
+                    // 按类加载器层级 自顶向下依次尝试加载类
                     c = findClass(name);
 
                     // this is the defining class loader; record the stats
@@ -430,6 +449,7 @@ public abstract class ClassLoader {
                 }
             }
             if (resolve) {
+                // 执行类加载的连接阶段
                 resolveClass(c);
             }
             return c;
@@ -508,6 +528,11 @@ public abstract class ClassLoader {
         domains.add(pd);
     }
 
+    /**
+     * 找到Class对象:
+     * 自定义类加载器需要重写该方法指定如何获取类的二进制字节流
+     * 并通过{@link #defineClass} 获取Class对象返回
+     */
     /**
      * Finds the class with the specified <a href="#name">binary name</a>.
      * This method should be overridden by class loader implementations that
@@ -657,6 +682,9 @@ public abstract class ClassLoader {
         // relies on the fact that spoofing is impossible if a class has a name
         // of the form "java.*"
         if ((name != null) && name.startsWith("java.")) {
+            /**
+             * 加载类时 通过{@link #defineClass}方法 获取Class对象时禁止加载 类全限定名以java开头的类
+             */
             throw new SecurityException
                 ("Prohibited package name: " +
                  name.substring(0, name.lastIndexOf('.')));
@@ -689,6 +717,10 @@ public abstract class ClassLoader {
         }
     }
 
+    /**
+     * 将字节数组转化为类的实例Class对象
+     * Converts an array of bytes into an instance of class <tt>Class</tt>
+     */
     /**
      * Converts an array of bytes into an instance of class <tt>Class</tt>,
      * with an optional <tt>ProtectionDomain</tt>.  If the domain is
@@ -946,6 +978,9 @@ public abstract class ClassLoader {
     }
 
     /**
+     * 执行类加载的连接阶段
+     */
+    /**
      * Links the specified class.  This (misleadingly named) method may be
      * used by a class loader to link a class.  If the class <tt>c</tt> has
      * already been linked, then this method simply returns. Otherwise, the
@@ -1004,6 +1039,9 @@ public abstract class ClassLoader {
         return system.loadClass(name);
     }
 
+    /**
+     * 通过 启动类加载器 加载类
+     */
     /**
      * Returns a class loaded by the bootstrap class loader;
      * or return null if not found.
@@ -1451,6 +1489,7 @@ public abstract class ClassLoader {
             sun.misc.Launcher l = sun.misc.Launcher.getLauncher();
             if (l != null) {
                 Throwable oops = null;
+                //获取 AppClassLoader
                 scl = l.getClassLoader();
                 try {
                     scl = AccessController.doPrivileged(
@@ -2200,6 +2239,11 @@ class SystemClassLoaderAction
         this.parent = parent;
     }
 
+    /**
+     * 可以通过系统参数 java.system.class.loader 指定系统类加载器SystemClassLoader全限定类名，且设定它的父类是 AppClassLoader
+     * @return
+     * @throws Exception
+     */
     public ClassLoader run() throws Exception {
         String cls = System.getProperty("java.system.class.loader");
         if (cls == null) {

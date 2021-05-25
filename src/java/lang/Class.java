@@ -227,6 +227,11 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
+     * 执行了类加载的加载阶段把类的二进制字节流加载到JVM
+     * 且执行类加载的连接阶段
+     *  ClassLoader#loadClass(String) 并没有进行类加载的连接阶段
+     */
+    /**
      * Returns the {@code Class} object associated with the class or
      * interface with the given string name.  Invoking this method is
      * equivalent to:
