@@ -162,6 +162,9 @@ class ComparableTimSort {
      */
 
     /**
+     * 合并算法和插入算法的结合
+     */
+    /**
      * Sorts the given range, using the given workspace array slice
      * for temp storage when possible. This method is designed to be
      * invoked from public methods (in class Arrays) after performing
@@ -185,6 +188,7 @@ class ComparableTimSort {
 
         // If array is small, do a "mini-TimSort" with no merges
         if (nRemaining < MIN_MERGE) {
+            //折半插入排序
             int initRunLen = countRunAndMakeAscending(a, lo, hi);
             binarySort(a, lo, hi, lo + initRunLen);
             return;

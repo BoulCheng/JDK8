@@ -418,6 +418,10 @@ public class Collections {
      * @throws UnsupportedOperationException if the specified list or
      *         its list-iterator does not support the <tt>set</tt> operation.
      */
+    /**
+     * 随机打乱list
+     * @param list
+     */
     public static void shuffle(List<?> list) {
         Random rnd = r;
         if (rnd == null)
@@ -449,6 +453,13 @@ public class Collections {
      * @param  rnd the source of randomness to use to shuffle the list.
      * @throws UnsupportedOperationException if the specified list or its
      *         list-iterator does not support the <tt>set</tt> operation.
+     */
+    /**
+     * 从list后向前到第二个元素，依次执行，当前元素与包括当前元素在内的向前所有元素中任意一个元素交换位置
+     *
+     * 新的list 每个位置都可能是原来list中任意一个元素
+     * @param list
+     * @param rnd
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public static void shuffle(List<?> list, Random rnd) {

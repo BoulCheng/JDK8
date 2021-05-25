@@ -1327,6 +1327,10 @@ public class Arrays {
     private static final int INSERTIONSORT_THRESHOLD = 7;
 
     /**
+     * 直接插入排序
+     * 归并排序
+     */
+    /**
      * Src is the source array that starts at index 0
      * Dest is the (possibly larger) array destination with a possible offset
      * low is the index in dest to start sorting
@@ -1342,6 +1346,7 @@ public class Arrays {
                                   int off) {
         int length = high - low;
 
+        //1直接插入排序
         // Insertion sort on smallest arrays
         if (length < INSERTIONSORT_THRESHOLD) {
             for (int i=low; i<high; i++)
@@ -1351,6 +1356,7 @@ public class Arrays {
             return;
         }
 
+        //2归并排序
         // Recursively sort halves of dest into src
         int destLow  = low;
         int destHigh = high;
